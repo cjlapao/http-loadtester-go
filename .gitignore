@@ -20,5 +20,7 @@ job_*.md
 # vendor/
 
 .vscode/
+!.vscode/launch.json
+!.vscode/tasks.json
 .local/
 bin/
