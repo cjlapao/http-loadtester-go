@@ -1,3 +1,5 @@
+name: Build Artifact
+
 on: 
   release:
     types: [created]
