@@ -19,7 +19,7 @@ job_*.md
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
-.vscode/
+.vscode/*
 !.vscode/launch.json
 !.vscode/tasks.json
 .local/
