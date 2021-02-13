@@ -18,8 +18,8 @@ jobs:
       env:
         GOOS: linux
         GOARCH: amd64
-      run: go build -v ./...
+      run: go build -o http-loadtester
     - uses: actions/upload-artifact@v2
       with:
         name: http-loadtester
-        path: ./http-loadtester-go
+        path: ./http-loadtester
