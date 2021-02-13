@@ -6,47 +6,68 @@ on:
     - 'v*'
 
 jobs:  
-  release-linux-amd64:
-    name: release linux/amd64
+  release:
+    name: Release
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        version: [linux, windows]
     steps:
     - uses: actions/checkout@v2
     - name: Set up Go
       uses: actions/setup-go@v2
       with:
         go-version: 1.15
-    - name: Build 
+    - name: Build Linux x64
+      id: build_linux_x64
       env:
         GOOS: linux
         GOARCH: amd64
       run: go build -o http-loadtester
-
-    - name: zip # This would actually build your project, using zip for an example artifact
+    - name: Zip Linux AMD64
+      id: zip_linux_x64
       run: |
-        zip --junk-paths http-loadtester http-loadtester
-    - name: Get the version
-      id: get_version
-      run: echo ::set-output name=VERSION::${GITHUB_REF#refs/tags/}
-    - name: Create Release      
+        zip --junk-paths http-loadtester_linux_x64 http-loadtester
+    - name: Build Windows x64
+      id: build_windows_x64
+      env:
+        GOOS: windows
+        GOARCH: amd64
+      run: go build -o http-loadtester.exe
+    - name: Zip Linux AMD64
+      id: zip_windows_x64
+      run: |
+        zip --junk-paths http-loadtester_win_x64 http-loadtester.exe
+    - name: Branch name
+      id: branch_name
+      run: |
+        echo ::set-output name=SOURCE_NAME::${GITHUB_REF#refs/*/}
+        echo ::set-output name=SOURCE_BRANCH::${GITHUB_REF#refs/heads/}
+        echo ::set-output name=SOURCE_TAG::${GITHUB_REF#refs/tags/}
+    - name: Create Release
       id: create_release
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: v0.1.6
-        release_name: Release v0.1.6
+        tag_name:  ${{ steps.branch_name.outputs.SOURCE_TAG }}
+        release_name: Release ${{ steps.branch_name.outputs.SOURCE_TAG }}
         draft: false
         prerelease: false
-    - name: Upload Release Asset
-      id: upload-release-asset 
+    - name: Upload Linux x64 Asset
+      id: upload-linux-x64-asset 
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-        asset_path: ./http-loadtester.zip
-        asset_name: http-loadtester.zip
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./http-loadtester_linux_x64.zip
+        asset_name: http-loadtester_linux_x64.zip
         asset_content_type: application/zip
+    - name: Upload Windows x64 Asset
+      id: upload-windows-x64-asset 
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./http-loadtester_win_x64.zip
+        asset_name: http-loadtester_win_x64.zip
+        asset_content_type: application/zip        
