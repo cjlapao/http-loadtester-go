@@ -1,4 +1,4 @@
-package jobrunner
+package main
 
 import (
 	"errors"
@@ -11,6 +11,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+// LoadTest Entity
 type LoadTest struct {
 	DisplayName     string            `json:"displayName" yaml:"displayName"`
 	Jobs            []LoadTestJob     `json:"jobs" yaml:"jobs"`
@@ -18,6 +19,7 @@ type LoadTest struct {
 	WaitBetweenJobs int               `json:"waitBetweenJobs" yaml:"waitBetweenJobs"`
 }
 
+// LoadTestJob Entity
 type LoadTestJob struct {
 	Name           string                 `json:"name" yaml:"name"`
 	Type           string                 `json:"type" yaml:"type"`
@@ -27,6 +29,7 @@ type LoadTestJob struct {
 	FuzzyLoad      *LoadTestFuzzyJob      `json:"fuzzyLoad" yaml:"fuzzyLoad"`
 }
 
+// LoadTestJobTarget Entity
 type LoadTestJobTarget struct {
 	URL              string `json:"url" yaml:"url"`
 	Method           string `json:"method" yaml:"method"`
@@ -36,30 +39,37 @@ type LoadTestJobTarget struct {
 	TimeoutInSeconds int    `json:"timeout" yaml:"timeout"`
 }
 
+// LoadTestConstantJob entity
 type LoadTestConstantJob struct {
 	Duration int                        `json:"duration" yaml:"duration"`
 	Options  LoadTestConstantJobOptions `json:"specs" yaml:"specs"`
 }
+
+// LoadTestConstantJobOptions Entity
 type LoadTestConstantJobOptions struct {
 	BlockInterval int `json:"blockInterval" yaml:"blockInterval"`
 	CallsPerBlock int `json:"callsPerBlock" yaml:"callsPerBlock"`
 }
 
+// LoadTestIncreasingJob Entity
 type LoadTestIncreasingJob struct {
 	Duration int                          `json:"duration" yaml:"duration"`
 	Options  LoadTestIncreasingJobOptions `json:"specs" yaml:"specs"`
 }
 
+// LoadTestIncreasingJobOptions Entity
 type LoadTestIncreasingJobOptions struct {
 	BlockInterval int `json:"blockInterval" yaml:"blockInterval"`
 	TotalCalls    int `json:"totalCalls" yaml:"totalCalls"`
 }
 
+// LoadTestFuzzyJob Entity
 type LoadTestFuzzyJob struct {
 	Duration int                     `json:"duration" yaml:"duration"`
 	Options  LoadTestFuzzyJobOptions `json:"specs" yaml:"specs"`
 }
 
+// LoadTestFuzzyJobOptions Entity
 type LoadTestFuzzyJobOptions struct {
 	MaxBlockInterval int `json:"maxBlockInterval" yaml:"maxBlockInterval"`
 	MinBlockInterval int `json:"minBlockInterval" yaml:"minBlockInterval"`
@@ -67,13 +77,15 @@ type LoadTestFuzzyJobOptions struct {
 	MinTasksPerBlock int `json:"minTaskPerBlock" yaml:"minTaskPerBlock"`
 }
 
+// LoadTestJobOutput Entity
 type LoadTestJobOutput struct {
 	MaxTaskOutput int  `json:"maxTaskOutput" yaml:"maxTaskOutput"`
 	OutputResults bool `json:"outputResults" yaml:"outputResults"`
 	OutputToFile  bool `json:"outputToFile" yaml:"outputToFile"`
 }
 
-func FromFile(filepath string) error {
+// ExecuteFromFile Execute LoadTest from file
+func ExecuteFromFile(filepath string) error {
 	if !helper.FileExists(filepath) {
 		err := errors.New("File was not found")
 		logger.LogError(err)

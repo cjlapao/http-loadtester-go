@@ -1,4 +1,4 @@
-package jobrunner
+package main
 
 import (
 	"fmt"
@@ -9,6 +9,7 @@ import (
 	"github.com/rs/xid"
 )
 
+// JobOperation Constants
 const (
 	IncreaseFactor float64 = 0.03
 )
@@ -25,6 +26,7 @@ type JobOperation struct {
 	Blocks    []*JobOperationBlock
 }
 
+// JobOperationOptions Entity
 type JobOperationOptions struct {
 	Duration         int
 	MaxTaskOutput    int
@@ -77,6 +79,7 @@ func CreateJobOperation() *JobOperation {
 	return &job
 }
 
+// CreateLoadJobResult Creates a JobOperation result
 func (j *JobOperation) CreateLoadJobResult() *JobOperationResult {
 	jobResults := make([]*JobOperationBlockResult, 0)
 	result := JobOperationResult{
@@ -239,6 +242,7 @@ func (j *JobOperation) Authenticated() bool {
 	return false
 }
 
+// ProcessResult Processes the results and calculates the averages
 func (j *JobOperationResult) ProcessResult() {
 	totalDurationForAverage := 0.0
 	totalTasksDurationForAverage := 0.0
