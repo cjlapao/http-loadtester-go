@@ -1,4 +1,6 @@
-# Introduction 
+# Introduction
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT) ![Build](https://github.com/cjlapao/markdown-go/workflows/Build/badge.svg) ![Release](https://github.com/cjlapao/markdown-go/workflows/Release/badge.svg) ![Security](https://github.com/cjlapao/markdown-go/workflows/CodeQL/badge.svg)  
 
 TODO: Give a short introduction of your project. Let this section explain the objectives or the motivation behind this project. 
 
