@@ -1,6 +1,8 @@
-# Introduction 
+# Introduction
 
-TODO: Give a short introduction of your project. Let this section explain the objectives or the motivation behind this project. 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT) ![Build](https://github.com/cjlapao/markdown-go/workflows/Build/badge.svg) ![Release](https://github.com/cjlapao/markdown-go/workflows/Release/badge.svg) ![Security](https://github.com/cjlapao/markdown-go/workflows/CodeQL/badge.svg)  
+
+HTTP LoadTest allows you to create specific scenarios of a load test for a specific REST API endpoint. 
 
 # Getting Started
 TODO: Guide users through getting your code up and running on their own system. In this section you can talk about:
