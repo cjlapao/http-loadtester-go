@@ -1,4 +1,4 @@
-package jobrunner
+package main
 
 import (
 	"fmt"

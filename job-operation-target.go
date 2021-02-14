@@ -1,4 +1,4 @@
-package jobrunner
+package main
 
 // JobOperationTarget Definition
 type JobOperationTarget struct {
@@ -19,6 +19,7 @@ func (j *JobOperation) CreateTarget() *JobOperationTarget {
 	return j.Target
 }
 
-func (t *JobOperationTarget) SetJsonContent() {
+// SetJSONContent Sets the operation type to JSON
+func (t *JobOperationTarget) SetJSONContent() {
 	t.ContentType = "application/json; charset=UTF-8"
 }
