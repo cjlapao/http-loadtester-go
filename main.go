@@ -7,6 +7,7 @@ import (
 
 	"github.com/cjlapao/common-go/helper"
 	"github.com/cjlapao/common-go/version"
+	"github.com/cjlapao/http-loadtester-go/jobs"
 
 	"github.com/cjlapao/common-go/log"
 )
@@ -34,7 +35,7 @@ func main() {
 	file := helper.GetFlagValue("file", "")
 
 	if file != "" {
-		err := ExecuteFromFile(file)
+		err := jobs.ExecuteFromFile(file)
 		if err != nil {
 			logger.Error("There was an error processing the file")
 			os.Exit(1)

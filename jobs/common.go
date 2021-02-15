@@ -1,4 +1,10 @@
-package main
+package jobs
+
+import (
+	"github.com/cjlapao/common-go/log"
+)
+
+var logger = log.Get()
 
 // Interval Entity
 type Interval struct {
