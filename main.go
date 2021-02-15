@@ -16,7 +16,11 @@ var logger = log.Get()
 var versionSvc = version.Get()
 
 func main() {
+	versionSvc.Name = "HTTP LoadTester"
 	versionSvc.Minor = 1
+	versionSvc.Author = "carlos Lapao"
+	versionSvc.License = "MIT"
+
 	getVersion := helper.GetFlagSwitch("version", false)
 	if getVersion {
 		format := helper.GetFlagValue("o", "json")
