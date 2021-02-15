@@ -100,6 +100,7 @@ type JobOperationBlockResult struct {
 	Succeeded              int
 	TotalDurationInSeconds float64
 	AverageTaskDuration    float64
+	ResponseDetails        *ResponseDetails
 }
 
 // Process Processes a JobOperationBlockResult updating the job
@@ -114,6 +115,9 @@ func (r *JobOperationBlockResult) Process() {
 				r.Failed++
 			}
 			totalDurationForAverage += callResult.QueryDuration.Seconds
+			if r.ResponseDetails == nil && callResult.ResponseDetails != nil {
+				r.ResponseDetails = callResult.ResponseDetails
+			}
 		}
 		r.AverageTaskDuration = totalDurationForAverage / float64(r.Total)
 	}

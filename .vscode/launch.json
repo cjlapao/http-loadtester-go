@@ -12,7 +12,7 @@
             },
             "args": [
                 "--file",
-                "test.yml",
+                ".\\.local\\volume-test-dataservices.yml",
                 "--verbose"
             ]
         }

@@ -20,3 +20,11 @@ func (s Interval) Value() int {
 func NewInterval(value int) Interval {
 	return Interval{value: value}
 }
+
+// ResponseDetails Entity
+type ResponseDetails struct {
+	IP            string
+	TLSCipher     string
+	TLSVersion    string
+	TLSServerName string
+}

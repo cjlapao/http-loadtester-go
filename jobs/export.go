@@ -39,6 +39,14 @@ func (j *JobOperation) MarkDown() string {
 	header := markdown.CreateHeader()
 	header.H1(fmt.Sprintf("HTTP Load Tester Report for %v", j.Target.URL))
 	htb := markdown.CreateTextBlock()
+	htb.AddLine(fmt.Sprintf("Job Type: %v", j.Type))
+	htb.AddLine(fmt.Sprintf("Task Type: %v", j.BlockType))
+	htb.AddLine(fmt.Sprintf("Method: %v", j.Target.Method))
+	if j.Target.Body != "" {
+		htb.AddLine("Contains Body: Yes")
+	} else {
+		htb.AddLine("Contains Body: No")
+	}
 	htb.AddLine(fmt.Sprintf("Duration: %.2f seconds", j.Result.TotalDurationInSeconds))
 	htb.AddLine(fmt.Sprintf("Total Calls: %v, Succeeded: %v, Failed: %v", j.Result.TotalCalls, j.Result.TotalSucceededCalls, j.Result.TotalFailedCalls))
 	htb.AddLine(fmt.Sprintf("Average Block Duration: %.4f seconds", j.Result.AverageBlockDuration))

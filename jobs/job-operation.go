@@ -53,6 +53,7 @@ type JobOperationResult struct {
 	TotalDurationInSeconds float64
 	AverageBlockDuration   float64
 	AverageCallDuration    float64
+	ResponseDetails        *ResponseDetails
 }
 
 // CreateJobOperation Creates a new Job Operation Task
@@ -175,7 +176,9 @@ func (j *JobOperation) generateBlockTasks() {
 func (j *JobOperation) getRandomBlockInterval() int {
 	max := j.Options.MaxBlockInterval.Value()
 	min := j.Options.MinBlockInterval.Value()
-	saltSource := rand.NewSource(time.Now().UnixNano())
+	rand.Seed(time.Now().UnixNano())
+	someSalt := int64(rand.Intn(10000))
+	saltSource := rand.NewSource(time.Now().UnixNano() * someSalt)
 	saltRandom := rand.New(saltSource)
 	randomSalt := saltRandom.Intn(10000)
 	BlockSource := rand.NewSource(time.Now().UnixNano() * int64(randomSalt))
@@ -188,12 +191,10 @@ func (j *JobOperation) getRandomBlockInterval() int {
 func (j *JobOperation) getRandomTaskCount() int {
 	max := j.Options.MaxTasksPerBlock.Value()
 	min := j.Options.MinTasksPerBlock.value
-	saltSource := rand.NewSource(time.Now().UnixNano())
-	saltRandom := rand.New(saltSource)
-	randomSalt := saltRandom.Intn(10000)
-	taskSource := rand.NewSource(time.Now().UnixNano() * int64(randomSalt))
-	taskRandom := rand.New(taskSource)
-	randomTasksNumber := taskRandom.Intn(max-min) + min
+	rand.Seed(time.Now().UnixNano())
+	someSalt := int64(rand.Intn(10000))
+	rand.Seed(time.Now().UnixNano() * someSalt)
+	randomTasksNumber := rand.Intn(max-min) + min
 
 	return randomTasksNumber
 }
@@ -255,6 +256,9 @@ func (j *JobOperationResult) ProcessResult() {
 			totalDurationForAverage += blockResult.TotalDurationInSeconds
 			for _, taskResult := range *blockResult.TaskResults {
 				totalTasksDurationForAverage += taskResult.QueryDuration.Seconds
+				if j.ResponseDetails == nil && blockResult.ResponseDetails != nil {
+					j.ResponseDetails = blockResult.ResponseDetails
+				}
 			}
 		}
 		j.AverageBlockDuration = totalDurationForAverage / float64(j.Total)
