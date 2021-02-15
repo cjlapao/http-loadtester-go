@@ -1,4 +1,4 @@
-package main
+package jobs
 
 // JobOperationTarget Definition
 type JobOperationTarget struct {
