@@ -12,7 +12,7 @@ import (
 type JobOperationBlock struct {
 	ID        string
 	JobID     string
-	JobName   string
+	JobName   *string
 	Type      JobOPerationType
 	BlockType BlockType
 	Target    *JobOperationTarget
@@ -34,10 +34,10 @@ func (j *JobOperation) CreateBlock() *JobOperationBlock {
 	}
 	block.Result = block.CreateBlockResult()
 	block.Result.BlockID = block.ID
-	if j.Name != "" {
+	if *j.Name != "" {
 		block.JobName = j.Name
 	} else {
-		block.JobName = j.ID
+		block.JobName = &j.ID
 	}
 	if j.Blocks == nil {
 		j.Blocks = make([]*JobOperationBlock, 0)

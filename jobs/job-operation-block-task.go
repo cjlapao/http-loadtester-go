@@ -18,7 +18,7 @@ type JobOperationBlockTask struct {
 	ID      int
 	BlockID string
 	JobID   string
-	JobName string
+	JobName *string
 	Timeout int
 	Target  *JobOperationTarget
 	Type    JobOPerationType
@@ -36,10 +36,10 @@ func (j *JobOperationBlock) CreateTask(id int) *JobOperationBlockTask {
 		Type:    j.Type,
 		Timeout: j.Timeout,
 	}
-	if j.JobName != "" {
+	if *j.JobName != "" {
 		task.JobName = j.JobName
 	} else {
-		task.JobName = j.JobID
+		task.JobName = &j.JobID
 	}
 
 	task.Verbose = helper.GetFlagSwitch("verbose", false)
@@ -74,7 +74,7 @@ func (t *JobOperationBlockTask) Execute(wg *sync.WaitGroup) {
 	}
 
 	if t.Verbose {
-		logger.Info("[%v] Started call %v to %v", t.JobName, fmt.Sprint(t.ID), t.Target.URL)
+		logger.Info("[%v] Started call %v to %v", *t.JobName, fmt.Sprint(t.ID), t.Target.URL)
 	}
 
 	// Implementing defined minutes timeout
@@ -99,7 +99,7 @@ func (t *JobOperationBlockTask) Execute(wg *sync.WaitGroup) {
 
 	if err != nil {
 		if t.Verbose {
-			logger.Error("[%v] Error creating request %v on call %v: %v", t.JobName, t.Target.Method.String(), fmt.Sprint(t.ID), err.Error())
+			logger.Error("[%v] Error creating request %v on call %v: %v", *t.JobName, t.Target.Method.String(), fmt.Sprint(t.ID), err.Error())
 		}
 		wg.Done()
 		return
@@ -118,7 +118,7 @@ func (t *JobOperationBlockTask) Execute(wg *sync.WaitGroup) {
 
 	if err != nil {
 		if t.Verbose {
-			logger.Error("[%v] Error on call %v: %v", t.JobName, fmt.Sprint(t.ID), err.Error())
+			logger.Error("[%v] Error on call %v: %v", *t.JobName, fmt.Sprint(t.ID), err.Error())
 		}
 
 		var duration time.Duration = endingTime.Sub(startingTime)
@@ -138,7 +138,7 @@ func (t *JobOperationBlockTask) Execute(wg *sync.WaitGroup) {
 
 	var duration time.Duration = endingTime.Sub(startingTime)
 	if t.Verbose {
-		logger.Info("[%v] Ended cal %v to %v, took %v", t.JobName, fmt.Sprint(t.ID), t.Target.URL, fmt.Sprint(duration.Seconds()))
+		logger.Info("[%v] Ended cal %v to %v, took %v", *t.JobName, fmt.Sprint(t.ID), t.Target.URL, fmt.Sprint(duration.Seconds()))
 	}
 
 	queryDuration := JobOperationBlockTaskDuration{
@@ -151,7 +151,7 @@ func (t *JobOperationBlockTask) Execute(wg *sync.WaitGroup) {
 	responseContent, err := ioutil.ReadAll(response.Body)
 	if err != nil {
 		if t.Verbose {
-			logger.Error("[%v] Error reading content on call %v: %v", t.JobName, fmt.Sprint(t.ID), err.Error())
+			logger.Error("[%v] Error reading content on call %v: %v", *t.JobName, fmt.Sprint(t.ID), err.Error())
 		}
 	}
 

@@ -17,7 +17,7 @@ const (
 // JobOperation Entity
 type JobOperation struct {
 	ID        string
-	Name      string
+	Name      *string
 	Type      JobOPerationType
 	BlockType BlockType
 	Target    *JobOperationTarget
@@ -74,7 +74,7 @@ func CreateJobOperation() *JobOperation {
 			TasksPerBlock:    NewInterval(60),
 		},
 	}
-	job.Name = job.ID
+	job.Name = &job.ID
 	job.CreateTarget()
 	job.CreateLoadJobResult()
 	return &job
@@ -212,7 +212,7 @@ func (j *JobOperation) Execute() error {
 	// Executing the blocks
 	for i, block := range j.Blocks {
 		blockNum := i + 1
-		logger.Info("Start processing Block %v (%v/%v)", fmt.Sprint(j.ID), fmt.Sprint(blockNum), fmt.Sprint(amountOfBlocks))
+		logger.Info("Start processing Block [%v/%v], using %v load with %v tasks and %v timeout", fmt.Sprint(blockNum), fmt.Sprint(amountOfBlocks), fmt.Sprint(j.Type), fmt.Sprint(j.BlockType), fmt.Sprint(time.Duration(j.Options.Timeout)*time.Second))
 		go block.Execute(&blockWaitingGroup)
 		time.Sleep(time.Duration(block.WaitFor.Value()) * time.Second)
 	}

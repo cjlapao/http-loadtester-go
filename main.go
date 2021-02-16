@@ -17,10 +17,10 @@ var versionSvc = version.Get()
 
 func main() {
 	versionSvc.Name = "HTTP LoadTester"
-	versionSvc.Minor = 1
 	versionSvc.Author = "carlos Lapao"
 	versionSvc.License = "MIT"
-
+	versionSvc.Minor = 1
+	versionSvc.Build = 3
 	getVersion := helper.GetFlagSwitch("version", false)
 	if getVersion {
 		format := helper.GetFlagValue("o", "json")
