@@ -212,7 +212,7 @@ func (j *JobOperation) Execute() error {
 	// Executing the blocks
 	for i, block := range j.Blocks {
 		blockNum := i + 1
-		logger.Info("Start processing Block [%v/%v], using %v load with %v tasks and %v timeout", fmt.Sprint(blockNum), fmt.Sprint(amountOfBlocks), fmt.Sprint(j.Type), fmt.Sprint(j.BlockType), fmt.Sprint(time.Duration(j.Options.Timeout)*time.Second))
+		logger.Info("Start processing Block [%v/%v], using %v load with %v %v tasks and %v timeout", fmt.Sprint(blockNum), fmt.Sprint(amountOfBlocks), fmt.Sprint(j.Type), fmt.Sprint(len(*block.Tasks)), fmt.Sprint(j.BlockType), fmt.Sprint(time.Duration(j.Options.Timeout)*time.Second))
 		go block.Execute(&blockWaitingGroup)
 		time.Sleep(time.Duration(block.WaitFor.Value()) * time.Second)
 	}
