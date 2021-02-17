@@ -3,6 +3,7 @@ package jobs
 import (
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/cjlapao/common-go/helper"
 
@@ -14,10 +15,10 @@ import (
 func (j *JobOperation) ExportReportToFile() {
 	content := j.MarkDown()
 	name := j.Name
-	if name != j.ID {
-		name += "_" + j.ID
+	if *name != j.ID {
+		*name += "_" + j.ID
 	}
-	helper.WriteToFile(content, "job_"+name+"_report.md")
+	helper.WriteToFile(content, "job_"+*name+"_report.md")
 }
 
 // ExportOutputToFile Exports a job result to a file
@@ -27,10 +28,10 @@ func (j *JobOperation) ExportOutputToFile() {
 		return
 	}
 	name := j.Name
-	if name != j.ID {
-		name += "_" + j.ID
+	if *name != j.ID {
+		*name += "_" + j.ID
 	}
-	helper.WriteToFile(string(stringContent), "job_"+name+"_output.yml")
+	helper.WriteToFile(string(stringContent), "job_"+*name+"_output.yml")
 }
 
 // MarkDown Generates a Job Markdown report
@@ -39,6 +40,15 @@ func (j *JobOperation) MarkDown() string {
 	header := markdown.CreateHeader()
 	header.H1(fmt.Sprintf("HTTP Load Tester Report for %v", j.Target.URL))
 	htb := markdown.CreateTextBlock()
+	htb.AddLine(fmt.Sprintf("Job Type: %v", j.Type))
+	htb.AddLine(fmt.Sprintf("Task Type: %v", j.BlockType))
+	htb.AddLine(fmt.Sprintf("Timeout: %v", fmt.Sprint(time.Duration(j.Options.Timeout)*time.Second)))
+	htb.AddLine(fmt.Sprintf("Method: %v", j.Target.Method))
+	if j.Target.Body != "" {
+		htb.AddLine("Contains Body: Yes")
+	} else {
+		htb.AddLine("Contains Body: No")
+	}
 	htb.AddLine(fmt.Sprintf("Duration: %.2f seconds", j.Result.TotalDurationInSeconds))
 	htb.AddLine(fmt.Sprintf("Total Calls: %v, Succeeded: %v, Failed: %v", j.Result.TotalCalls, j.Result.TotalSucceededCalls, j.Result.TotalFailedCalls))
 	htb.AddLine(fmt.Sprintf("Average Block Duration: %.4f seconds", j.Result.AverageBlockDuration))

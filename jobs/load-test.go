@@ -125,10 +125,11 @@ func ExecuteFromFile(filepath string) error {
 			job.BlockType = ParallelBlock
 		}
 		if loadTesterJob.Name != "" {
-			job.Name = strings.ReplaceAll(loadTesterJob.Name, " ", "_")
-			job.Name = strings.ReplaceAll(job.Name, ":", "")
-			job.Name = strings.ReplaceAll(job.Name, "/", "")
-			job.Name = strings.ReplaceAll(job.Name, "\\", "")
+			jName := strings.ReplaceAll(loadTesterJob.Name, " ", "_")
+			jName = strings.ReplaceAll(jName, ":", "")
+			jName = strings.ReplaceAll(jName, "/", "")
+			jName = strings.ReplaceAll(jName, "\\", "")
+			job.Name = &jName
 		}
 		if loadTesterJob.Target.Body != "" {
 			job.Target.Body = loadTesterJob.Target.Body
@@ -197,9 +198,9 @@ func ExecuteFromFile(filepath string) error {
 				job.Options.MaxTaskOutput = loadTest.Report.MaxTaskOutput
 			}
 		}
-		logger.Success("Starting job %v execution.", job.Name)
+		logger.Success("Starting job %v execution.", *job.Name)
 		job.Execute()
-		logger.Success("Finished executing job %v, generating reports...", job.Name)
+		logger.Success("Finished executing job %v, generating reports...", *job.Name)
 		if loadTest.Report.OutputToFile {
 			job.ExportReportToFile()
 		} else {
@@ -208,7 +209,7 @@ func ExecuteFromFile(filepath string) error {
 		if loadTest.Report.OutputResults {
 			job.ExportOutputToFile()
 		}
-		logger.Success("Finished creating reports for job %v", job.Name)
+		logger.Success("Finished creating reports for job %v", *job.Name)
 		if i < len(loadTest.Jobs)-1 {
 			if loadTest.WaitBetweenJobs > 0 {
 				logger.Info("Waiting for %v seconds for the next job...", fmt.Sprint(loadTest.WaitBetweenJobs))

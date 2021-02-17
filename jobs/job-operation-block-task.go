@@ -2,6 +2,8 @@ package jobs
 
 import (
 	"bytes"
+	"context"
+	"crypto/tls"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -16,7 +18,7 @@ type JobOperationBlockTask struct {
 	ID      int
 	BlockID string
 	JobID   string
-	JobName string
+	JobName *string
 	Timeout int
 	Target  *JobOperationTarget
 	Type    JobOPerationType
@@ -34,10 +36,10 @@ func (j *JobOperationBlock) CreateTask(id int) *JobOperationBlockTask {
 		Type:    j.Type,
 		Timeout: j.Timeout,
 	}
-	if j.JobName != "" {
+	if *j.JobName != "" {
 		task.JobName = j.JobName
 	} else {
-		task.JobName = j.JobID
+		task.JobName = &j.JobID
 	}
 
 	task.Verbose = helper.GetFlagSwitch("verbose", false)
@@ -72,13 +74,16 @@ func (t *JobOperationBlockTask) Execute(wg *sync.WaitGroup) {
 	}
 
 	if t.Verbose {
-		logger.Info("[%v] Started call %v to %v", t.JobName, fmt.Sprint(t.ID), t.Target.URL)
+		logger.Info("[%v] Started call %v to %v", *t.JobName, fmt.Sprint(t.ID), t.Target.URL)
 	}
 
 	// Implementing defined minutes timeout
 	client := &http.Client{
 		Timeout: time.Duration(t.Timeout) * time.Second,
 	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(t.Timeout)*time.Second)
+	defer cancel()
 
 	var response *http.Response
 	var request *http.Request
@@ -94,7 +99,7 @@ func (t *JobOperationBlockTask) Execute(wg *sync.WaitGroup) {
 
 	if err != nil {
 		if t.Verbose {
-			logger.Error("[%v] Error creating request %v on call %v: %v", t.JobName, t.Target.Method.String(), fmt.Sprint(t.ID), err.Error())
+			logger.Error("[%v] Error creating request %v on call %v: %v", *t.JobName, t.Target.Method.String(), fmt.Sprint(t.ID), err.Error())
 		}
 		wg.Done()
 		return
@@ -108,11 +113,12 @@ func (t *JobOperationBlockTask) Execute(wg *sync.WaitGroup) {
 			request.Header.Set("Content-Type", t.Target.ContentType)
 		}
 	}
-	response, err = client.Do(request)
+	response, err = client.Do(request.WithContext(ctx))
 	endingTime := time.Now().UTC()
+
 	if err != nil {
 		if t.Verbose {
-			logger.Error("[%v] Error on call %v: %v", t.JobName, fmt.Sprint(t.ID), err.Error())
+			logger.Error("[%v] Error on call %v: %v", *t.JobName, fmt.Sprint(t.ID), err.Error())
 		}
 
 		var duration time.Duration = endingTime.Sub(startingTime)
@@ -132,7 +138,7 @@ func (t *JobOperationBlockTask) Execute(wg *sync.WaitGroup) {
 
 	var duration time.Duration = endingTime.Sub(startingTime)
 	if t.Verbose {
-		logger.Info("[%v] Ended cal %v to %v, took %v", t.JobName, fmt.Sprint(t.ID), t.Target.URL, fmt.Sprint(duration.Seconds()))
+		logger.Info("[%v] Ended cal %v to %v, took %v", *t.JobName, fmt.Sprint(t.ID), t.Target.URL, fmt.Sprint(duration.Seconds()))
 	}
 
 	queryDuration := JobOperationBlockTaskDuration{
@@ -145,10 +151,27 @@ func (t *JobOperationBlockTask) Execute(wg *sync.WaitGroup) {
 	responseContent, err := ioutil.ReadAll(response.Body)
 	if err != nil {
 		if t.Verbose {
-			logger.Error("[%v] Error reading content on call %v: %v", t.JobName, fmt.Sprint(t.ID), err.Error())
+			logger.Error("[%v] Error reading content on call %v: %v", *t.JobName, fmt.Sprint(t.ID), err.Error())
 		}
 	}
 
+	responseDetails := ResponseDetails{
+		TLSCipher:     tls.CipherSuiteName(response.TLS.CipherSuite),
+		TLSServerName: response.TLS.ServerName,
+		IP:            getIP(response.Request),
+	}
+	switch response.TLS.Version {
+	case 769:
+		responseDetails.TLSVersion = "TLSv1.0"
+	case 770:
+		responseDetails.TLSVersion = "TLSv1.1"
+	case 771:
+		responseDetails.TLSVersion = "TLSv1.2"
+	case 772:
+		responseDetails.TLSVersion = "TLSv1.3"
+	}
+
+	t.Result.ResponseDetails = &responseDetails
 	t.Result.StatusCode = response.StatusCode
 	t.Result.Status = response.Status
 	t.Result.Content = string(responseContent)
@@ -156,16 +179,25 @@ func (t *JobOperationBlockTask) Execute(wg *sync.WaitGroup) {
 	wg.Done()
 }
 
+func getIP(r *http.Request) string {
+	forwarded := r.Header.Get("X-FORWARDED-FOR")
+	if forwarded != "" {
+		return forwarded
+	}
+	return r.RemoteAddr
+}
+
 // JobOperationBlockTaskResult Entity
 type JobOperationBlockTaskResult struct {
-	TaskID        int
-	BlockID       string
-	JobID         string
-	Target        *JobOperationTarget
-	QueryDuration *JobOperationBlockTaskDuration
-	Status        string
-	StatusCode    int
-	Content       string
+	TaskID          int
+	BlockID         string
+	JobID           string
+	Target          *JobOperationTarget
+	QueryDuration   *JobOperationBlockTaskDuration
+	Status          string
+	StatusCode      int
+	Content         string
+	ResponseDetails *ResponseDetails
 }
 
 // JobOperationBlockTaskDuration Entity
