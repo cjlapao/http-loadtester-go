@@ -1,4 +1,10 @@
-package main
+package jobs
+
+import (
+	"github.com/cjlapao/common-go/log"
+)
+
+var logger = log.Get()
 
 // Interval Entity
 type Interval struct {
@@ -13,4 +19,12 @@ func (s Interval) Value() int {
 // NewInterval Creates a new interval value
 func NewInterval(value int) Interval {
 	return Interval{value: value}
+}
+
+// ResponseDetails Entity
+type ResponseDetails struct {
+	IP            string
+	TLSCipher     string
+	TLSVersion    string
+	TLSServerName string
 }

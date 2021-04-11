@@ -1,4 +1,4 @@
-package main
+package jobs
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ import (
 type JobOperationBlock struct {
 	ID        string
 	JobID     string
-	JobName   string
+	JobName   *string
 	Type      JobOPerationType
 	BlockType BlockType
 	Target    *JobOperationTarget
@@ -34,10 +34,10 @@ func (j *JobOperation) CreateBlock() *JobOperationBlock {
 	}
 	block.Result = block.CreateBlockResult()
 	block.Result.BlockID = block.ID
-	if j.Name != "" {
+	if *j.Name != "" {
 		block.JobName = j.Name
 	} else {
-		block.JobName = j.ID
+		block.JobName = &j.ID
 	}
 	if j.Blocks == nil {
 		j.Blocks = make([]*JobOperationBlock, 0)
@@ -100,6 +100,7 @@ type JobOperationBlockResult struct {
 	Succeeded              int
 	TotalDurationInSeconds float64
 	AverageTaskDuration    float64
+	ResponseDetails        *ResponseDetails
 }
 
 // Process Processes a JobOperationBlockResult updating the job
@@ -114,6 +115,9 @@ func (r *JobOperationBlockResult) Process() {
 				r.Failed++
 			}
 			totalDurationForAverage += callResult.QueryDuration.Seconds
+			if r.ResponseDetails == nil && callResult.ResponseDetails != nil {
+				r.ResponseDetails = callResult.ResponseDetails
+			}
 		}
 		r.AverageTaskDuration = totalDurationForAverage / float64(r.Total)
 	}

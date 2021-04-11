@@ -7,6 +7,7 @@ import (
 
 	"github.com/cjlapao/common-go/helper"
 	"github.com/cjlapao/common-go/version"
+	"github.com/cjlapao/http-loadtester-go/jobs"
 
 	"github.com/cjlapao/common-go/log"
 )
@@ -15,7 +16,11 @@ var logger = log.Get()
 var versionSvc = version.Get()
 
 func main() {
+	versionSvc.Name = "HTTP LoadTester"
+	versionSvc.Author = "carlos Lapao"
+	versionSvc.License = "MIT"
 	versionSvc.Minor = 1
+	versionSvc.Build = 3
 	getVersion := helper.GetFlagSwitch("version", false)
 	if getVersion {
 		format := helper.GetFlagValue("o", "json")
@@ -34,7 +39,7 @@ func main() {
 	file := helper.GetFlagValue("file", "")
 
 	if file != "" {
-		err := ExecuteFromFile(file)
+		err := jobs.ExecuteFromFile(file)
 		if err != nil {
 			logger.Error("There was an error processing the file")
 			os.Exit(1)

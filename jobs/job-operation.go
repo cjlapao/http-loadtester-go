@@ -1,4 +1,4 @@
-package main
+package jobs
 
 import (
 	"fmt"
@@ -17,7 +17,7 @@ const (
 // JobOperation Entity
 type JobOperation struct {
 	ID        string
-	Name      string
+	Name      *string
 	Type      JobOPerationType
 	BlockType BlockType
 	Target    *JobOperationTarget
@@ -53,6 +53,7 @@ type JobOperationResult struct {
 	TotalDurationInSeconds float64
 	AverageBlockDuration   float64
 	AverageCallDuration    float64
+	ResponseDetails        *ResponseDetails
 }
 
 // CreateJobOperation Creates a new Job Operation Task
@@ -73,7 +74,7 @@ func CreateJobOperation() *JobOperation {
 			TasksPerBlock:    NewInterval(60),
 		},
 	}
-	job.Name = job.ID
+	job.Name = &job.ID
 	job.CreateTarget()
 	job.CreateLoadJobResult()
 	return &job
@@ -175,7 +176,9 @@ func (j *JobOperation) generateBlockTasks() {
 func (j *JobOperation) getRandomBlockInterval() int {
 	max := j.Options.MaxBlockInterval.Value()
 	min := j.Options.MinBlockInterval.Value()
-	saltSource := rand.NewSource(time.Now().UnixNano())
+	rand.Seed(time.Now().UnixNano())
+	someSalt := int64(rand.Intn(10000))
+	saltSource := rand.NewSource(time.Now().UnixNano() * someSalt)
 	saltRandom := rand.New(saltSource)
 	randomSalt := saltRandom.Intn(10000)
 	BlockSource := rand.NewSource(time.Now().UnixNano() * int64(randomSalt))
@@ -188,12 +191,10 @@ func (j *JobOperation) getRandomBlockInterval() int {
 func (j *JobOperation) getRandomTaskCount() int {
 	max := j.Options.MaxTasksPerBlock.Value()
 	min := j.Options.MinTasksPerBlock.value
-	saltSource := rand.NewSource(time.Now().UnixNano())
-	saltRandom := rand.New(saltSource)
-	randomSalt := saltRandom.Intn(10000)
-	taskSource := rand.NewSource(time.Now().UnixNano() * int64(randomSalt))
-	taskRandom := rand.New(taskSource)
-	randomTasksNumber := taskRandom.Intn(max-min) + min
+	rand.Seed(time.Now().UnixNano())
+	someSalt := int64(rand.Intn(10000))
+	rand.Seed(time.Now().UnixNano() * someSalt)
+	randomTasksNumber := rand.Intn(max-min) + min
 
 	return randomTasksNumber
 }
@@ -211,7 +212,7 @@ func (j *JobOperation) Execute() error {
 	// Executing the blocks
 	for i, block := range j.Blocks {
 		blockNum := i + 1
-		logger.Info("Start processing Block %v (%v/%v)", fmt.Sprint(j.ID), fmt.Sprint(blockNum), fmt.Sprint(amountOfBlocks))
+		logger.Info("Start processing Block [%v/%v], using %v load with %v %v tasks and %v timeout", fmt.Sprint(blockNum), fmt.Sprint(amountOfBlocks), fmt.Sprint(j.Type), fmt.Sprint(len(*block.Tasks)), fmt.Sprint(j.BlockType), fmt.Sprint(time.Duration(j.Options.Timeout)*time.Second))
 		go block.Execute(&blockWaitingGroup)
 		time.Sleep(time.Duration(block.WaitFor.Value()) * time.Second)
 	}
@@ -255,6 +256,9 @@ func (j *JobOperationResult) ProcessResult() {
 			totalDurationForAverage += blockResult.TotalDurationInSeconds
 			for _, taskResult := range *blockResult.TaskResults {
 				totalTasksDurationForAverage += taskResult.QueryDuration.Seconds
+				if j.ResponseDetails == nil && blockResult.ResponseDetails != nil {
+					j.ResponseDetails = blockResult.ResponseDetails
+				}
 			}
 		}
 		j.AverageBlockDuration = totalDurationForAverage / float64(j.Total)
