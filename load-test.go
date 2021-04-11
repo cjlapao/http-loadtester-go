@@ -88,20 +88,20 @@ type LoadTestJobOutput struct {
 func ExecuteFromFile(filepath string) error {
 	if !helper.FileExists(filepath) {
 		err := errors.New("File was not found")
-		logger.LogError(err)
+		logger.Error(err.Error())
 		return err
 	}
 
 	content, err := helper.ReadFromFile(filepath)
 	if err != nil {
-		logger.LogError(err)
+		logger.Error(err.Error())
 		return err
 	}
 
 	var loadTest LoadTest
 	err = yaml.Unmarshal(content, &loadTest)
 	if err != nil {
-		logger.LogError(err)
+		logger.Error(err.Error())
 		return err
 	}
 	if loadTest.DisplayName != "" {
@@ -111,7 +111,7 @@ func ExecuteFromFile(filepath string) error {
 	for i, loadTesterJob := range loadTest.Jobs {
 		if loadTesterJob.Target.URL == "" {
 			err := errors.New("Url was not defined")
-			logger.LogError(err)
+			logger.Error(err.Error())
 			return err
 		}
 		job := CreateJobOperation()
