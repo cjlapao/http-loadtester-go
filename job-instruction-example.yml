@@ -1,0 +1,92 @@
+displayName: "Load Tests Istio - App Gateway"
+waitBetweenJobs: 2
+jobs:
+  - name: Health Endpoint
+    target: 
+      url: https://example.com/health
+      method: GET
+    constantLoad:
+      duration: 2
+      specs:
+        blockInterval: 1
+        callsPerBlock: 100
+    timeout: 60
+    type: sequential
+  - name: People Endpoint
+    target: 
+      url: https://example.com/api/people/1
+      method: GET
+      token: jwt-type-of-token-if-authentication-needed
+    constantLoad:
+      duration: 2
+      specs:
+        blockInterval: 1
+        callsPerBlock: 100
+    timeout: 60
+    type: sequential
+  - name: Planets Endpoint
+    target: 
+      url: https://api-interop.ivanticlouddev.com/api/planets/1
+      method: GET
+      token: eyJhbGciOiJSUzI1NiIsImtpZCI6IkFPZTlyS3VBMDVidkJVY1E0Rmo2RWpTV0dZNCIsInR5cCI6IkpXVCIsIng1dCI6IkFPZTlyS3VBMDVidkJVY1E0Rmo2RWpTV0dZNCJ9.eyJuYmYiOjE2MTE2NzM5NzEsImV4cCI6MTYxMTY3NzU3MSwiaXNzIjoiaHR0cHM6Ly9UZXN0YXJvc3NhLXNmYy5pdmFudGljbG91ZGRldi5jb20vb3BzIiwiYXVkIjpbImh0dHBzOi8vVGVzdGFyb3NzYS1zZmMuaXZhbnRpY2xvdWRkZXYuY29tL29wcy9yZXNvdXJjZXMiLCJhcGkxIl0sImNsaWVudF9pZCI6IlRlc3Rhcm9zc2Etb3BzLml2YW50aWNsb3VkZGV2LmNvbSIsIklzT3BzIjoidHJ1ZSIsInRpZCI6IjExMTEyMjIyLTMzMzMtNDQ0NC01NTU1LTY2NjY3Nzc3ODg4OCIsIlVub1RlbmFudElkIjoiMTExMTIyMjItMzMzMy00NDQ0LTU1NTUtNjY2Njc3Nzc4ODg4Iiwic2NvcGUiOlsiYXBpMSJdfQ.a_JH_cavP0q3rV29kid4zx1rsBTnl6v21Aoj5ayaeHMPcW7PL30c0yEASm0cxvf2DoIjR7L_xR5TyNbpd_-mIhjjJ3VQ-gUDka-jyzsWpZFnRPIToxTvXT0grDhsvEdP1tKwDp3jfqjUZMvIo1HIwbNBSQhv-4LCZCEkbOxiR6RvxeoP_Ac7Oero_JhE2yThWVPsbhfysjbG18TXuoJErdCgHRh932RipBv6w3kIUOBgM_pVnb77zcPnY6QB12uc-gA8dGOkeSEhi-LSG6JTB6Tqt8UdNVekHesRLdCuZcbrlBoEbbV3D8iG20vfQ7Aav0hsjC6g2E7QPs5INtkTMQ
+    constantLoad:
+      duration: 2
+      specs:
+        blockInterval: 1
+        callsPerBlock: 100
+    timeout: 60
+    type: sequential
+  - name: StarShips Endpoint
+    target: 
+      url: https://api-interop.ivanticlouddev.com/api/starships/2
+      method: GET
+      token: eyJhbGciOiJSUzI1NiIsImtpZCI6IkFPZTlyS3VBMDVidkJVY1E0Rmo2RWpTV0dZNCIsInR5cCI6IkpXVCIsIng1dCI6IkFPZTlyS3VBMDVidkJVY1E0Rmo2RWpTV0dZNCJ9.eyJuYmYiOjE2MTE2NzM5NzEsImV4cCI6MTYxMTY3NzU3MSwiaXNzIjoiaHR0cHM6Ly9UZXN0YXJvc3NhLXNmYy5pdmFudGljbG91ZGRldi5jb20vb3BzIiwiYXVkIjpbImh0dHBzOi8vVGVzdGFyb3NzYS1zZmMuaXZhbnRpY2xvdWRkZXYuY29tL29wcy9yZXNvdXJjZXMiLCJhcGkxIl0sImNsaWVudF9pZCI6IlRlc3Rhcm9zc2Etb3BzLml2YW50aWNsb3VkZGV2LmNvbSIsIklzT3BzIjoidHJ1ZSIsInRpZCI6IjExMTEyMjIyLTMzMzMtNDQ0NC01NTU1LTY2NjY3Nzc3ODg4OCIsIlVub1RlbmFudElkIjoiMTExMTIyMjItMzMzMy00NDQ0LTU1NTUtNjY2Njc3Nzc4ODg4Iiwic2NvcGUiOlsiYXBpMSJdfQ.a_JH_cavP0q3rV29kid4zx1rsBTnl6v21Aoj5ayaeHMPcW7PL30c0yEASm0cxvf2DoIjR7L_xR5TyNbpd_-mIhjjJ3VQ-gUDka-jyzsWpZFnRPIToxTvXT0grDhsvEdP1tKwDp3jfqjUZMvIo1HIwbNBSQhv-4LCZCEkbOxiR6RvxeoP_Ac7Oero_JhE2yThWVPsbhfysjbG18TXuoJErdCgHRh932RipBv6w3kIUOBgM_pVnb77zcPnY6QB12uc-gA8dGOkeSEhi-LSG6JTB6Tqt8UdNVekHesRLdCuZcbrlBoEbbV3D8iG20vfQ7Aav0hsjC6g2E7QPs5INtkTMQ
+    constantLoad:
+      duration: 2
+      specs:
+        blockInterval: 1
+        callsPerBlock: 100
+    timeout: 60
+    type: sequential
+  - name: Vehicles Endpoint
+    target: 
+      url: https://api-interop.ivanticlouddev.com/api/vehicles/4
+      method: GET
+      token: eyJhbGciOiJSUzI1NiIsImtpZCI6IkFPZTlyS3VBMDVidkJVY1E0Rmo2RWpTV0dZNCIsInR5cCI6IkpXVCIsIng1dCI6IkFPZTlyS3VBMDVidkJVY1E0Rmo2RWpTV0dZNCJ9.eyJuYmYiOjE2MTE2NzM5NzEsImV4cCI6MTYxMTY3NzU3MSwiaXNzIjoiaHR0cHM6Ly9UZXN0YXJvc3NhLXNmYy5pdmFudGljbG91ZGRldi5jb20vb3BzIiwiYXVkIjpbImh0dHBzOi8vVGVzdGFyb3NzYS1zZmMuaXZhbnRpY2xvdWRkZXYuY29tL29wcy9yZXNvdXJjZXMiLCJhcGkxIl0sImNsaWVudF9pZCI6IlRlc3Rhcm9zc2Etb3BzLml2YW50aWNsb3VkZGV2LmNvbSIsIklzT3BzIjoidHJ1ZSIsInRpZCI6IjExMTEyMjIyLTMzMzMtNDQ0NC01NTU1LTY2NjY3Nzc3ODg4OCIsIlVub1RlbmFudElkIjoiMTExMTIyMjItMzMzMy00NDQ0LTU1NTUtNjY2Njc3Nzc4ODg4Iiwic2NvcGUiOlsiYXBpMSJdfQ.a_JH_cavP0q3rV29kid4zx1rsBTnl6v21Aoj5ayaeHMPcW7PL30c0yEASm0cxvf2DoIjR7L_xR5TyNbpd_-mIhjjJ3VQ-gUDka-jyzsWpZFnRPIToxTvXT0grDhsvEdP1tKwDp3jfqjUZMvIo1HIwbNBSQhv-4LCZCEkbOxiR6RvxeoP_Ac7Oero_JhE2yThWVPsbhfysjbG18TXuoJErdCgHRh932RipBv6w3kIUOBgM_pVnb77zcPnY6QB12uc-gA8dGOkeSEhi-LSG6JTB6Tqt8UdNVekHesRLdCuZcbrlBoEbbV3D8iG20vfQ7Aav0hsjC6g2E7QPs5INtkTMQ
+    constantLoad:
+      duration: 2
+      specs:
+        blockInterval: 1
+        callsPerBlock: 100
+    timeout: 60
+    type: sequential
+  - name: Login Endpoint
+    target: 
+      url: https://api-interop.ivanticlouddev.com/login
+      method: POST
+      body: |
+        {
+          "email": "admin@example.com",
+          "password": "admin"
+        }
+    constantLoad:
+      duration: 2
+      specs:
+        blockInterval: 1
+        callsPerBlock: 100
+    timeout: 60
+    type: sequential
+  - name: Hello Endpoint
+    target: 
+      url: https://api-interop.ivanticlouddev.com/auth/hello
+      method: GET
+      token: eyJhbGciOiJIUzI1NiJ9.eyJlbWFpbF92ZXJpZmllZCI6ZmFsc2UsImV4cCI6MTYxMTY3NzYyMi4zNDI0MzM1LCJpYXQiOjE2MTE2NzQwMjIsImlzcyI6Ikl0dGVjaDI0LmNvLnVrIiwic2NvcGUiOiJhdXRoZW50aWNhdGlvbiIsInN1YiI6ImFkbWluQGxvY2FsaG9zdCJ9.5Hh7lOnmOjrDjT_P5hWXZFrfvbRCa7P6KhkajLZd64s
+    constantLoad:
+      duration: 2
+      specs:
+        blockInterval: 1
+        callsPerBlock: 100
+    timeout: 60
+    type: sequential
+report:
+  outputToFile: true  
