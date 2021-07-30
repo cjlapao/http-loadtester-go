@@ -27,4 +27,4 @@ COPY --from=builder /go/bin/http_loadtester /go/bin/http_loadtester
 RUN chmod +x /go/bin/http_loadtester
 
 EXPOSE 80
-ENTRYPOINT ["/go/bin/http_loadtester", "api"]
+ENTRYPOINT ["/go/bin/http_loadtester-go", "api"]

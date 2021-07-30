@@ -37,9 +37,10 @@ func (j *JobOperation) ExportOutputToFile() {
 // MarkDown Generates a Job Markdown report
 func (j *JobOperation) MarkDown() string {
 	md := markdown.CreateDocument()
-	header := markdown.CreateHeader()
+	header := md.CreateHeader()
 	header.H1(fmt.Sprintf("HTTP Load Tester Report for %v", j.Target.URL))
-	htb := markdown.CreateTextBlock()
+
+	htb := md.CreateTextBlock()
 	htb.AddLine(fmt.Sprintf("Job Type: %v", j.Type))
 	htb.AddLine(fmt.Sprintf("Task Type: %v", j.BlockType))
 	htb.AddLine(fmt.Sprintf("Timeout: %v", fmt.Sprint(time.Duration(j.Options.Timeout)*time.Second)))
@@ -54,23 +55,19 @@ func (j *JobOperation) MarkDown() string {
 	htb.AddLine(fmt.Sprintf("Average Block Duration: %.4f seconds", j.Result.AverageBlockDuration))
 	htb.AddLine(fmt.Sprintf("Average Call Duration: %.4f seconds", j.Result.AverageCallDuration))
 	htb.AddLine(fmt.Sprintf("Authentication: %v", strconv.FormatBool(j.Authenticated())))
-	blockDetailsHeader := markdown.CreateHeader()
+	htb.NewLine().NewLine()
+	blockDetailsHeader := md.CreateHeader()
 	blockDetailsHeader.H2("Block Results Details")
-	blockTable := j.generateBlockTable()
-	blockTaskDetailsHeader := markdown.CreateHeader()
+	j.generateBlockTable(md)
+	blockTaskDetailsHeader := md.CreateHeader()
 	blockTaskDetailsHeader.H2("Block Task Results Details")
-	blockTaskTable := j.generateBlockTaskTable()
-	md.Add(header)
-	md.Add(htb)
-	md.Add(blockDetailsHeader)
-	md.Add(blockTable)
-	md.Add(blockTaskDetailsHeader)
-	md.Add(blockTaskTable)
+	j.generateBlockTaskTable(md)
+
 	return md.Sprint()
 }
 
-func (j *JobOperation) generateBlockTable() *markdown.Table {
-	table := markdown.CreateTable()
+func (j *JobOperation) generateBlockTable(document *markdown.Document) *markdown.Table {
+	table := document.CreateTable()
 	table.AddHeaderColumn("Block")
 	table.AddAlignedHeaderColumn("Total Queries", markdown.AlignRight)
 	table.AddAlignedHeaderColumn("Failed Queries", markdown.AlignRight)
@@ -91,8 +88,8 @@ func (j *JobOperation) generateBlockTable() *markdown.Table {
 	return table
 }
 
-func (j *JobOperation) generateBlockTaskTable() *markdown.Table {
-	table := markdown.CreateTable()
+func (j *JobOperation) generateBlockTaskTable(document *markdown.Document) *markdown.Table {
+	table := document.CreateTable()
 	table.AddHeaderColumn("Block")
 	table.AddHeaderColumn("Tasks")
 	table.AddAlignedHeaderColumn("Duration", markdown.AlignRight)
