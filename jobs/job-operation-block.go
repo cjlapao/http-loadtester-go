@@ -10,27 +10,29 @@ import (
 
 // JobOperationBlock Entity
 type JobOperationBlock struct {
-	ID        string
-	JobID     string
-	JobName   *string
-	Type      JobOPerationType
-	BlockType BlockType
-	Target    *JobOperationTarget
-	Tasks     *[]*JobOperationBlockTask
-	Result    *JobOperationBlockResult
-	WaitFor   Interval
-	Timeout   int
+	ID           string
+	JobID        string
+	JobName      *string
+	Type         JobOPerationType
+	JobBlockType BlockType
+	BlockType    BlockType
+	Target       *JobOperationTarget
+	Tasks        *[]*JobOperationBlockTask
+	Result       *JobOperationBlockResult
+	WaitFor      Interval
+	Timeout      int
 }
 
 // CreateBlock Create a Block for the JobOperation
 func (j *JobOperation) CreateBlock() *JobOperationBlock {
 	block := JobOperationBlock{
-		ID:        xid.New().String(),
-		JobID:     j.ID,
-		Type:      j.Type,
-		BlockType: j.BlockType,
-		Target:    j.Target,
-		Timeout:   j.Options.Timeout,
+		ID:           xid.New().String(),
+		JobID:        j.ID,
+		Type:         j.Type,
+		JobBlockType: j.OperationType,
+		BlockType:    j.Options.BlockType,
+		Target:       j.Target,
+		Timeout:      j.Options.Timeout,
 	}
 	block.Result = block.CreateBlockResult()
 	block.Result.BlockID = block.ID
@@ -73,7 +75,7 @@ func (j *JobOperationBlock) Execute(wg *sync.WaitGroup) {
 		case SequentialBlock:
 			task.Execute(&taskWaitGroup)
 		default:
-			go task.Execute(&taskWaitGroup)
+			task.Execute(&taskWaitGroup)
 		}
 	}
 	taskWaitGroup.Wait()
@@ -86,7 +88,7 @@ func (j *JobOperationBlock) Execute(wg *sync.WaitGroup) {
 
 	j.Result.TotalDurationInSeconds = duration.Seconds()
 
-	logger.Info("Finished processing Block %v, made %v calls to target", j.ID, fmt.Sprint(amountTasks))
+	logger.Info("Finished processing %v Block %v, made %v %v calls to target", fmt.Sprint(j.JobBlockType), j.ID, fmt.Sprint(amountTasks), fmt.Sprint(j.BlockType))
 	wg.Done()
 }
 
@@ -98,14 +100,21 @@ type JobOperationBlockResult struct {
 	Total                  int
 	Failed                 int
 	Succeeded              int
+	TaskResponseStatus     *[]*JobOperationTaskResponseStatusResult
 	TotalDurationInSeconds float64
 	AverageTaskDuration    float64
 	ResponseDetails        *ResponseDetails
 }
 
+type JobOperationTaskResponseStatusResult struct {
+	Code  int
+	Count int
+}
+
 // Process Processes a JobOperationBlockResult updating the job
 func (r *JobOperationBlockResult) Process() {
 	totalDurationForAverage := 0.0
+	responseStatusResult := make([]*JobOperationTaskResponseStatusResult, 0)
 	if r.TaskResults != nil {
 		for _, callResult := range *r.TaskResults {
 			r.Total++
@@ -114,11 +123,33 @@ func (r *JobOperationBlockResult) Process() {
 			} else {
 				r.Failed++
 			}
+			if len(responseStatusResult) == 0 {
+				newStatusCode := JobOperationTaskResponseStatusResult{
+					Code:  callResult.StatusCode,
+					Count: 1,
+				}
+				responseStatusResult = append(responseStatusResult, &newStatusCode)
+			} else {
+				for _, status := range responseStatusResult {
+					if status.Code == callResult.StatusCode {
+						status.Count++
+					} else {
+						newStatusCode := JobOperationTaskResponseStatusResult{
+							Code:  callResult.StatusCode,
+							Count: 1,
+						}
+						responseStatusResult = append(responseStatusResult, &newStatusCode)
+					}
+				}
+			}
+
 			totalDurationForAverage += callResult.QueryDuration.Seconds
 			if r.ResponseDetails == nil && callResult.ResponseDetails != nil {
 				r.ResponseDetails = callResult.ResponseDetails
 			}
 		}
+
+		r.TaskResponseStatus = &responseStatusResult
 		r.AverageTaskDuration = totalDurationForAverage / float64(r.Total)
 	}
 }

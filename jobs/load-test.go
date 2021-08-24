@@ -47,8 +47,9 @@ type LoadTestConstantJob struct {
 
 // LoadTestConstantJobOptions Entity
 type LoadTestConstantJobOptions struct {
-	BlockInterval int `json:"blockInterval" yaml:"blockInterval"`
-	CallsPerBlock int `json:"callsPerBlock" yaml:"callsPerBlock"`
+	BlockType     string `json:"type" yaml:"type"`
+	BlockInterval int    `json:"blockInterval" yaml:"blockInterval"`
+	CallsPerBlock int    `json:"callsPerBlock" yaml:"callsPerBlock"`
 }
 
 // LoadTestIncreasingJob Entity
@@ -59,8 +60,9 @@ type LoadTestIncreasingJob struct {
 
 // LoadTestIncreasingJobOptions Entity
 type LoadTestIncreasingJobOptions struct {
-	BlockInterval int `json:"blockInterval" yaml:"blockInterval"`
-	TotalCalls    int `json:"totalCalls" yaml:"totalCalls"`
+	BlockType     string `json:"type" yaml:"type"`
+	BlockInterval int    `json:"blockInterval" yaml:"blockInterval"`
+	TotalCalls    int    `json:"totalCalls" yaml:"totalCalls"`
 }
 
 // LoadTestFuzzyJob Entity
@@ -71,10 +73,11 @@ type LoadTestFuzzyJob struct {
 
 // LoadTestFuzzyJobOptions Entity
 type LoadTestFuzzyJobOptions struct {
-	MaxBlockInterval int `json:"maxBlockInterval" yaml:"maxBlockInterval"`
-	MinBlockInterval int `json:"minBlockInterval" yaml:"minBlockInterval"`
-	MaxTasksPerBlock int `json:"maxTaskPerBlock" yaml:"maxTaskPerBlock"`
-	MinTasksPerBlock int `json:"minTaskPerBlock" yaml:"minTaskPerBlock"`
+	BlockType        string `json:"type" yaml:"type"`
+	MaxBlockInterval int    `json:"maxBlockInterval" yaml:"maxBlockInterval"`
+	MinBlockInterval int    `json:"minBlockInterval" yaml:"minBlockInterval"`
+	MaxTasksPerBlock int    `json:"maxTaskPerBlock" yaml:"maxTaskPerBlock"`
+	MinTasksPerBlock int    `json:"minTaskPerBlock" yaml:"minTaskPerBlock"`
 }
 
 // LoadTestJobOutput Entity
@@ -118,11 +121,11 @@ func ExecuteFromFile(filepath string) error {
 
 		switch strings.ToLower(loadTesterJob.Type) {
 		case "parallel":
-			job.BlockType = ParallelBlock
+			job.OperationType = ParallelBlock
 		case "sequential":
-			job.BlockType = SequentialBlock
+			job.OperationType = SequentialBlock
 		default:
-			job.BlockType = ParallelBlock
+			job.OperationType = SequentialBlock
 		}
 		if loadTesterJob.Name != "" {
 			jName := strings.ReplaceAll(loadTesterJob.Name, " ", "_")
@@ -131,6 +134,11 @@ func ExecuteFromFile(filepath string) error {
 			jName = strings.ReplaceAll(jName, "\\", "")
 			job.Name = &jName
 		}
+		job.Options.Timeout = loadTesterJob.Target.TimeoutInSeconds
+		if job.Options.Timeout == 0 {
+			job.Options.Timeout = 120
+		}
+
 		if loadTesterJob.Target.Body != "" {
 			job.Target.Body = loadTesterJob.Target.Body
 		}
@@ -151,6 +159,16 @@ func ExecuteFromFile(filepath string) error {
 		}
 		if loadTesterJob.ConstantLoad != nil {
 			job.Type = Constant
+
+			switch strings.ToLower(loadTesterJob.ConstantLoad.Options.BlockType) {
+			case "parallel":
+				job.Options.BlockType = ParallelBlock
+			case "sequential":
+				job.Options.BlockType = SequentialBlock
+			default:
+				job.Options.BlockType = SequentialBlock
+			}
+
 			if loadTesterJob.ConstantLoad.Duration > 0 {
 				job.Options.Duration = loadTesterJob.ConstantLoad.Duration
 			}
@@ -165,6 +183,16 @@ func ExecuteFromFile(filepath string) error {
 			}
 		} else if loadTesterJob.IncreasingLoad != nil {
 			job.Type = Increasing
+
+			switch strings.ToLower(loadTesterJob.IncreasingLoad.Options.BlockType) {
+			case "parallel":
+				job.Options.BlockType = ParallelBlock
+			case "sequential":
+				job.Options.BlockType = SequentialBlock
+			default:
+				job.Options.BlockType = SequentialBlock
+			}
+
 			if loadTesterJob.IncreasingLoad.Duration > 0 {
 				job.Options.Duration = loadTesterJob.IncreasingLoad.Duration
 			}
@@ -179,6 +207,16 @@ func ExecuteFromFile(filepath string) error {
 			}
 		} else if loadTesterJob.FuzzyLoad != nil {
 			job.Type = Fuzzy
+
+			switch strings.ToLower(loadTesterJob.FuzzyLoad.Options.BlockType) {
+			case "parallel":
+				job.Options.BlockType = ParallelBlock
+			case "sequential":
+				job.Options.BlockType = SequentialBlock
+			default:
+				job.Options.BlockType = SequentialBlock
+			}
+
 			if loadTesterJob.FuzzyLoad.Duration > 0 {
 				job.Options.Duration = loadTesterJob.FuzzyLoad.Duration
 			}
@@ -199,8 +237,11 @@ func ExecuteFromFile(filepath string) error {
 			}
 		}
 		logger.Success("Starting job %v execution.", *job.Name)
+		startTime := time.Now()
 		job.Execute()
 		logger.Success("Finished executing job %v, generating reports...", *job.Name)
+		endTime := time.Now()
+		job.Result.TimeTaken = endTime.Sub(startTime)
 		if loadTest.Report.OutputToFile {
 			job.ExportReportToFile()
 		} else {

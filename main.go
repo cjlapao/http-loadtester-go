@@ -20,7 +20,7 @@ func main() {
 	versionSvc.Author = "carlos Lapao"
 	versionSvc.License = "MIT"
 	versionSvc.Minor = 1
-	versionSvc.Build = 3
+	versionSvc.Build = 6
 	getVersion := helper.GetFlagSwitch("version", false)
 	if getVersion {
 		format := helper.GetFlagValue("o", "json")

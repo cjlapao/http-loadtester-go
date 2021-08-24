@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -128,9 +129,16 @@ func (t *JobOperationBlockTask) Execute(wg *sync.WaitGroup) {
 			Seconds:  duration.Seconds(),
 		}
 
-		t.Result.QueryDuration = &queryDuration
-		t.Result.StatusCode = 500
-		t.Result.Status = "500 Load Balancer exception"
+		errorString := err.Error()
+		if strings.Contains(errorString, "target machine actively refused it") {
+			t.Result.QueryDuration = &queryDuration
+			t.Result.StatusCode = 408
+			t.Result.Status = "target machine actively refused connection"
+		} else {
+			t.Result.QueryDuration = &queryDuration
+			t.Result.StatusCode = 524
+			t.Result.Status = "err: " + errorString
+		}
 
 		wg.Done()
 		return
@@ -138,7 +146,7 @@ func (t *JobOperationBlockTask) Execute(wg *sync.WaitGroup) {
 
 	var duration time.Duration = endingTime.Sub(startingTime)
 	if t.Verbose {
-		logger.Info("[%v] Ended cal %v to %v, took %v", *t.JobName, fmt.Sprint(t.ID), t.Target.URL, fmt.Sprint(duration.Seconds()))
+		logger.Info("[%v] Ended call %v to %v, took %v", *t.JobName, fmt.Sprint(t.ID), t.Target.URL, fmt.Sprint(duration.Seconds()))
 	}
 
 	queryDuration := JobOperationBlockTaskDuration{
@@ -148,38 +156,54 @@ func (t *JobOperationBlockTask) Execute(wg *sync.WaitGroup) {
 
 	t.Result.QueryDuration = &queryDuration
 
-	responseContent, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		if t.Verbose {
-			logger.Error("[%v] Error reading content on call %v: %v", *t.JobName, fmt.Sprint(t.ID), err.Error())
+	responseDetails := ResponseDetails{}
+
+	if response != nil {
+		responseContent, err := ioutil.ReadAll(response.Body)
+		if err != nil {
+			if t.Verbose {
+				logger.Error("[%v] Error reading content on call %v: %v", *t.JobName, fmt.Sprint(t.ID), err.Error())
+			}
 		}
-	}
 
-	responseDetails := ResponseDetails{
-		TLSCipher:     tls.CipherSuiteName(response.TLS.CipherSuite),
-		TLSServerName: response.TLS.ServerName,
-		IP:            getIP(response.Request),
-	}
-	switch response.TLS.Version {
-	case 769:
-		responseDetails.TLSVersion = "TLSv1.0"
-	case 770:
-		responseDetails.TLSVersion = "TLSv1.1"
-	case 771:
-		responseDetails.TLSVersion = "TLSv1.2"
-	case 772:
-		responseDetails.TLSVersion = "TLSv1.3"
-	}
+		responseDetails.IP = getIP(response.Request)
 
-	t.Result.ResponseDetails = &responseDetails
-	t.Result.StatusCode = response.StatusCode
-	t.Result.Status = response.Status
-	t.Result.Content = string(responseContent)
+		if response.TLS != nil {
+			responseDetails.TLSCipher = tls.CipherSuiteName(response.TLS.CipherSuite)
+			responseDetails.TLSServerName = response.TLS.ServerName
+
+			switch response.TLS.Version {
+			case 769:
+				responseDetails.TLSVersion = "TLSv1.0"
+			case 770:
+				responseDetails.TLSVersion = "TLSv1.1"
+			case 771:
+				responseDetails.TLSVersion = "TLSv1.2"
+			case 772:
+				responseDetails.TLSVersion = "TLSv1.3"
+			}
+		}
+
+		t.Result.ResponseDetails = &responseDetails
+		t.Result.StatusCode = response.StatusCode
+		t.Result.Status = response.Status
+		t.Result.Content = string(responseContent)
+
+	} else {
+		logger.Error("There was no response from the api")
+		t.Result.ResponseDetails = &responseDetails
+		t.Result.Status = "No Response back from server"
+		t.Result.StatusCode = 500
+	}
 
 	wg.Done()
 }
 
 func getIP(r *http.Request) string {
+	if r == nil {
+		return ""
+	}
+
 	forwarded := r.Header.Get("X-FORWARDED-FOR")
 	if forwarded != "" {
 		return forwarded

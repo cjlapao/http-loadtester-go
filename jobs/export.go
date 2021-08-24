@@ -42,7 +42,8 @@ func (j *JobOperation) MarkDown() string {
 
 	htb := md.CreateTextBlock()
 	htb.AddLine(fmt.Sprintf("Job Type: %v", j.Type))
-	htb.AddLine(fmt.Sprintf("Task Type: %v", j.BlockType))
+	htb.AddLine(fmt.Sprintf("Block Type: %v", j.OperationType))
+	htb.AddLine(fmt.Sprintf("Task Type: %v", j.Options.BlockType))
 	htb.AddLine(fmt.Sprintf("Timeout: %v", fmt.Sprint(time.Duration(j.Options.Timeout)*time.Second)))
 	htb.AddLine(fmt.Sprintf("Method: %v", j.Target.Method))
 	if j.Target.Body != "" {
@@ -55,7 +56,11 @@ func (j *JobOperation) MarkDown() string {
 	htb.AddLine(fmt.Sprintf("Average Block Duration: %.4f seconds", j.Result.AverageBlockDuration))
 	htb.AddLine(fmt.Sprintf("Average Call Duration: %.4f seconds", j.Result.AverageCallDuration))
 	htb.AddLine(fmt.Sprintf("Authentication: %v", strconv.FormatBool(j.Authenticated())))
+	htb.AddLine(fmt.Sprintf("Time Taken: %v", fmt.Sprint(j.Result.TimeTaken)))
 	htb.NewLine().NewLine()
+	statusDetailsHeader := md.CreateHeader()
+	statusDetailsHeader.H2("Status Results Details")
+	j.generateTaskTable(md)
 	blockDetailsHeader := md.CreateHeader()
 	blockDetailsHeader.H2("Block Results Details")
 	j.generateBlockTable(md)
@@ -64,6 +69,21 @@ func (j *JobOperation) MarkDown() string {
 	j.generateBlockTaskTable(md)
 
 	return md.Sprint()
+}
+
+func (j *JobOperation) generateTaskTable(document *markdown.Document) *markdown.Table {
+	table := document.CreateTable()
+	table.AddAlignedHeaderColumn("Code", markdown.AlignRight)
+	table.AddAlignedHeaderColumn("Total", markdown.AlignRight)
+
+	for _, status := range *j.Result.TaskResponseStatus {
+		table.AddRow(
+			fmt.Sprintf("%v", status.Code),
+			fmt.Sprintf("%v", status.Count),
+		)
+	}
+
+	return table
 }
 
 func (j *JobOperation) generateBlockTable(document *markdown.Document) *markdown.Table {

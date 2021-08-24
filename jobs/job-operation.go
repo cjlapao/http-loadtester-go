@@ -16,14 +16,14 @@ const (
 
 // JobOperation Entity
 type JobOperation struct {
-	ID        string
-	Name      *string
-	Type      JobOPerationType
-	BlockType BlockType
-	Target    *JobOperationTarget
-	Options   *JobOperationOptions
-	Result    *JobOperationResult
-	Blocks    []*JobOperationBlock
+	ID            string
+	Name          *string
+	Type          JobOPerationType
+	OperationType BlockType
+	Target        *JobOperationTarget
+	Options       *JobOperationOptions
+	Result        *JobOperationResult
+	Blocks        []*JobOperationBlock
 }
 
 // JobOperationOptions Entity
@@ -32,6 +32,7 @@ type JobOperationOptions struct {
 	MaxTaskOutput    int
 	Timeout          int
 	Verbose          bool
+	BlockType        BlockType
 	BlockInterval    Interval
 	TasksPerBlock    Interval
 	MaxBlockInterval Interval
@@ -54,13 +55,15 @@ type JobOperationResult struct {
 	AverageBlockDuration   float64
 	AverageCallDuration    float64
 	ResponseDetails        *ResponseDetails
+	TimeTaken              time.Duration
+	TaskResponseStatus     *[]*JobOperationTaskResponseStatusResult
 }
 
 // CreateJobOperation Creates a new Job Operation Task
 func CreateJobOperation() *JobOperation {
 	job := JobOperation{
-		ID:        xid.New().String(),
-		BlockType: ParallelBlock,
+		ID:            xid.New().String(),
+		OperationType: ParallelBlock,
 		Options: &JobOperationOptions{
 			Timeout:          120,
 			Verbose:          false,
@@ -105,6 +108,7 @@ func (j *JobOperation) generateBlocks() {
 			for i := 0; i < numberOfBlocks; i++ {
 				block := j.CreateBlock()
 				block.WaitFor = NewInterval(j.Options.BlockInterval.Value())
+				block.BlockType = j.Options.BlockType
 			}
 		}
 	case Fuzzy:
@@ -116,6 +120,7 @@ func (j *JobOperation) generateBlocks() {
 		if numberOfBlocks > 0 {
 			for i := 0; i < numberOfBlocks; i++ {
 				block := j.CreateBlock()
+				block.BlockType = j.Options.BlockType
 				if j.Options.MaxBlockInterval.Value() > j.Options.MinBlockInterval.value {
 					block.WaitFor = NewInterval(j.getRandomBlockInterval())
 				} else {
@@ -212,9 +217,21 @@ func (j *JobOperation) Execute() error {
 	// Executing the blocks
 	for i, block := range j.Blocks {
 		blockNum := i + 1
-		logger.Info("Start processing Block [%v/%v], using %v load with %v %v tasks and %v timeout", fmt.Sprint(blockNum), fmt.Sprint(amountOfBlocks), fmt.Sprint(j.Type), fmt.Sprint(len(*block.Tasks)), fmt.Sprint(j.BlockType), fmt.Sprint(time.Duration(j.Options.Timeout)*time.Second))
-		go block.Execute(&blockWaitingGroup)
-		time.Sleep(time.Duration(block.WaitFor.Value()) * time.Second)
+		switch j.OperationType {
+		case ParallelBlock:
+			logger.Info("Started processing Parallel Block %v [%v/%v], using %v load with %v %v tasks and %v timeout", block.ID, fmt.Sprint(blockNum), fmt.Sprint(amountOfBlocks), fmt.Sprint(j.Type), fmt.Sprint(len(*block.Tasks)), fmt.Sprint(block.BlockType), fmt.Sprint(time.Duration(j.Options.Timeout)*time.Second))
+			go block.Execute(&blockWaitingGroup)
+		case SequentialBlock:
+			logger.Info("Started processing Sequential Block %v [%v/%v], using %v load with %v %v tasks and %v timeout", block.ID, fmt.Sprint(blockNum), fmt.Sprint(amountOfBlocks), fmt.Sprint(j.Type), fmt.Sprint(len(*block.Tasks)), fmt.Sprint(block.BlockType), fmt.Sprint(time.Duration(j.Options.Timeout)*time.Second))
+			block.Execute(&blockWaitingGroup)
+		default:
+			logger.Info("Started processing Sequential Block %v [%v/%v], using %v load with %v %v tasks and %v timeout", block.ID, fmt.Sprint(blockNum), fmt.Sprint(amountOfBlocks), fmt.Sprint(j.Type), fmt.Sprint(len(*block.Tasks)), fmt.Sprint(block.BlockType), fmt.Sprint(time.Duration(j.Options.Timeout)*time.Second))
+			block.Execute(&blockWaitingGroup)
+		}
+		if block.WaitFor.Value() > 0 {
+			logger.Info("Waiting for %v before starting next block", fmt.Sprint(time.Duration(block.WaitFor.Value())*time.Second))
+			time.Sleep(time.Duration(block.WaitFor.Value()) * time.Second)
+		}
 	}
 	blockWaitingGroup.Wait()
 	endingTime := time.Now().UTC()
@@ -247,6 +264,7 @@ func (j *JobOperation) Authenticated() bool {
 func (j *JobOperationResult) ProcessResult() {
 	totalDurationForAverage := 0.0
 	totalTasksDurationForAverage := 0.0
+	responseStatusResult := make([]*JobOperationTaskResponseStatusResult, 0)
 	if j.BlockResults != nil {
 		for _, blockResult := range *j.BlockResults {
 			j.Total++
@@ -254,13 +272,36 @@ func (j *JobOperationResult) ProcessResult() {
 			j.TotalSucceededCalls += blockResult.Succeeded
 			j.TotalFailedCalls += blockResult.Failed
 			totalDurationForAverage += blockResult.TotalDurationInSeconds
+
+			for _, status := range *blockResult.TaskResponseStatus {
+				exists := false
+				for _, jobStatus := range responseStatusResult {
+					if status.Code == jobStatus.Code {
+						jobStatus.Count = jobStatus.Count + status.Count
+					}
+					exists = true
+				}
+
+				if !exists {
+					newStatusCode := JobOperationTaskResponseStatusResult{
+						Code:  status.Code,
+						Count: status.Count,
+					}
+
+					responseStatusResult = append(responseStatusResult, &newStatusCode)
+				}
+			}
+
 			for _, taskResult := range *blockResult.TaskResults {
 				totalTasksDurationForAverage += taskResult.QueryDuration.Seconds
 				if j.ResponseDetails == nil && blockResult.ResponseDetails != nil {
 					j.ResponseDetails = blockResult.ResponseDetails
 				}
 			}
+
 		}
+
+		j.TaskResponseStatus = &responseStatusResult
 		j.AverageBlockDuration = totalDurationForAverage / float64(j.Total)
 		j.AverageCallDuration = totalTasksDurationForAverage / float64(j.TotalCalls)
 	}
