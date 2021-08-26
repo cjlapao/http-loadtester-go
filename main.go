@@ -7,6 +7,7 @@ import (
 
 	"github.com/cjlapao/common-go/helper"
 	"github.com/cjlapao/common-go/version"
+	"github.com/cjlapao/http-loadtester-go/controller"
 	"github.com/cjlapao/http-loadtester-go/jobs"
 
 	"github.com/cjlapao/common-go/log"
@@ -40,21 +41,27 @@ func main() {
 
 	file := helper.GetFlagValue("file", "")
 
-	if file != "" {
-		err := jobs.ExecuteFromFile(file)
-		if err != nil {
-			logger.Error("There was an error processing the file")
+	apiMode := helper.GetFlagSwitch("api", false)
+
+	if apiMode {
+		controller.RestApiModuleProcessor()
+	} else {
+		if file != "" {
+			err := jobs.ExecuteFromFile(file)
+			if err != nil {
+				logger.Error("There was an error processing the file")
+				os.Exit(1)
+			}
+			logger.Success("Finished, bye!!!")
+			os.Exit(0)
+		}
+
+		url := helper.GetFlagValue("target", "")
+		if url == "" {
+			logger.Error("Missing url to target")
 			os.Exit(1)
 		}
-		logger.Success("Finished, bye!!!")
-		os.Exit(0)
-	}
 
-	url := helper.GetFlagValue("target", "")
-	if url == "" {
-		logger.Error("Missing url to target")
-		os.Exit(1)
+		fmt.Print("Finished")
 	}
-
-	fmt.Print("Finished")
 }

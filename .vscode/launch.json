@@ -11,7 +11,7 @@
                 "LOADTEST_DEBUG": "true",
             },
             "args": [
-                "--file",
+                "--api",
                 ".\\.local\\icf-sample.yml"
             ]
         }

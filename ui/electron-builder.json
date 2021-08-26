@@ -1,0 +1,60 @@
+{
+  "asar": true,
+  "directories": {
+    "output": "release/",
+    "buildResources": "assets"
+  },
+  "files": [
+    {
+      "from": "dist",
+      "to": ".",
+      "filter": [
+        "**/*.js"
+      ]
+    },
+    {
+      "from": "../dist",
+      "to": ".",
+      "filter": [
+        "**/*"
+      ]
+    },
+    "**/*",
+    "!**/*.ts",
+    "!dist/**/*.ts",
+    "!*.map",
+    "!dist/**/*.map",
+    "!package-lock.json"
+  ],
+  "extraResources": [
+    {
+      "from": "dist",
+      "to": "app",
+      "filter": [
+        "**/*"
+      ]
+    }
+  ],
+  "win": {
+    "icon": "assets/icons",
+    "target": [
+      "portable"
+    ]
+  },
+  "portable": {
+    "splashImage": "dist/assets/icons/electron.bmp"
+  },
+  "mac": {
+    "icon": "assets/icons",
+    "target": [
+      "dmg"
+    ]
+  },
+  "linux": {
+    "category": "Programing",
+    "icon": "dist/assets/icons/favicon.png",
+    "target": [
+      "AppImage"
+    ]
+  }
+}
