@@ -16,6 +16,8 @@ var logger = log.Get()
 var versionSvc = version.Get()
 
 func main() {
+	jobs.NewRand()
+
 	versionSvc.Name = "HTTP LoadTester"
 	versionSvc.Author = "carlos Lapao"
 	versionSvc.License = "MIT"

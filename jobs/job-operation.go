@@ -32,11 +32,14 @@ type JobOperationOptions struct {
 	MaxTaskOutput    int
 	Timeout          int
 	Verbose          bool
+	LogResult        bool
 	BlockType        BlockType
 	BlockInterval    Interval
 	TasksPerBlock    Interval
 	MaxBlockInterval Interval
 	MinBlockInterval Interval
+	MaxTaskInterval  Interval
+	MinTaskInterval  Interval
 	MaxTasksPerBlock Interval
 	MinTasksPerBlock Interval
 }
@@ -69,10 +72,12 @@ func CreateJobOperation() *JobOperation {
 			Verbose:          false,
 			Duration:         60,
 			MaxTaskOutput:    15,
-			MaxBlockInterval: NewInterval(1),
-			MinBlockInterval: NewInterval(1),
+			MaxBlockInterval: NewInterval(0),
+			MinBlockInterval: NewInterval(0),
 			MaxTasksPerBlock: NewInterval(20),
 			MinTasksPerBlock: NewInterval(10),
+			MaxTaskInterval:  NewInterval(0),
+			MinTaskInterval:  NewInterval(0),
 			BlockInterval:    NewInterval(1),
 			TasksPerBlock:    NewInterval(60),
 		},
@@ -109,6 +114,8 @@ func (j *JobOperation) generateBlocks() {
 				block := j.CreateBlock()
 				block.WaitFor = NewInterval(j.Options.BlockInterval.Value())
 				block.BlockType = j.Options.BlockType
+				block.MinTaskInterval = j.Options.MinTaskInterval
+				block.MaxTaskInterval = j.Options.MaxTaskInterval
 			}
 		}
 	case Fuzzy:
@@ -121,6 +128,8 @@ func (j *JobOperation) generateBlocks() {
 			for i := 0; i < numberOfBlocks; i++ {
 				block := j.CreateBlock()
 				block.BlockType = j.Options.BlockType
+				block.MinTaskInterval = j.Options.MinTaskInterval
+				block.MaxTaskInterval = j.Options.MaxTaskInterval
 				if j.Options.MaxBlockInterval.Value() > j.Options.MinBlockInterval.value {
 					block.WaitFor = NewInterval(j.getRandomBlockInterval())
 				} else {
@@ -181,14 +190,8 @@ func (j *JobOperation) generateBlockTasks() {
 func (j *JobOperation) getRandomBlockInterval() int {
 	max := j.Options.MaxBlockInterval.Value()
 	min := j.Options.MinBlockInterval.Value()
-	rand.Seed(time.Now().UnixNano())
-	someSalt := int64(rand.Intn(10000))
-	saltSource := rand.NewSource(time.Now().UnixNano() * someSalt)
-	saltRandom := rand.New(saltSource)
-	randomSalt := saltRandom.Intn(10000)
-	BlockSource := rand.NewSource(time.Now().UnixNano() * int64(randomSalt))
-	blockRandom := rand.New(BlockSource)
-	randomBlockNumber := blockRandom.Intn(max-min) + min
+
+	randomBlockNumber := callRandom.Intn(max-min) + min
 
 	return randomBlockNumber
 }
@@ -217,6 +220,8 @@ func (j *JobOperation) Execute() error {
 	// Executing the blocks
 	for i, block := range j.Blocks {
 		blockNum := i + 1
+		block.BlockPosition = blockNum
+		block.TotalBlocks = amountOfBlocks
 		switch j.OperationType {
 		case ParallelBlock:
 			logger.Info("Started processing Parallel Block %v [%v/%v], using %v load with %v %v tasks and %v timeout", block.ID, fmt.Sprint(blockNum), fmt.Sprint(amountOfBlocks), fmt.Sprint(j.Type), fmt.Sprint(len(*block.Tasks)), fmt.Sprint(block.BlockType), fmt.Sprint(time.Duration(j.Options.Timeout)*time.Second))
@@ -228,7 +233,7 @@ func (j *JobOperation) Execute() error {
 			logger.Info("Started processing Sequential Block %v [%v/%v], using %v load with %v %v tasks and %v timeout", block.ID, fmt.Sprint(blockNum), fmt.Sprint(amountOfBlocks), fmt.Sprint(j.Type), fmt.Sprint(len(*block.Tasks)), fmt.Sprint(block.BlockType), fmt.Sprint(time.Duration(j.Options.Timeout)*time.Second))
 			block.Execute(&blockWaitingGroup)
 		}
-		if block.WaitFor.Value() > 0 {
+		if block.WaitFor.Value() > 0 && i < len(j.Blocks) {
 			logger.Info("Waiting for %v before starting next block", fmt.Sprint(time.Duration(block.WaitFor.Value())*time.Second))
 			time.Sleep(time.Duration(block.WaitFor.Value()) * time.Second)
 		}
@@ -278,8 +283,8 @@ func (j *JobOperationResult) ProcessResult() {
 				for _, jobStatus := range responseStatusResult {
 					if status.Code == jobStatus.Code {
 						jobStatus.Count = jobStatus.Count + status.Count
+						exists = true
 					}
-					exists = true
 				}
 
 				if !exists {

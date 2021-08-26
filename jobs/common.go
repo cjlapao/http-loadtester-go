@@ -1,6 +1,9 @@
 package jobs
 
 import (
+	"math/rand"
+	"time"
+
 	"github.com/cjlapao/common-go/log"
 )
 
@@ -27,4 +30,30 @@ type ResponseDetails struct {
 	TLSCipher     string
 	TLSVersion    string
 	TLSServerName string
+	Body          string
+}
+
+var callRandom *rand.Rand
+
+func GetRandomBlockInterval(maxInterval Interval, minInterval Interval) int {
+	max := maxInterval.Value()
+	min := minInterval.Value()
+
+	randomBlockNumber := callRandom.Intn(max-min) + min
+
+	return randomBlockNumber
+}
+
+func NewRand() *rand.Rand {
+	if callRandom == nil {
+		rand.Seed(time.Now().UnixNano())
+		someSalt := int64(rand.Intn(10000))
+		saltSource := rand.NewSource(time.Now().UnixNano() * someSalt)
+		saltRandom := rand.New(saltSource)
+		randomSalt := saltRandom.Intn(1000000)
+		BlockSource := rand.NewSource(someSalt * int64(randomSalt))
+		callRandom = rand.New(BlockSource)
+	}
+
+	return callRandom
 }

@@ -7,6 +7,7 @@ type JobOperationTarget struct {
 	ContentType string
 	Body        string
 	JwtToken    string
+	logResponse bool
 }
 
 // CreateTarget Creates a Default Target to the JobOperation

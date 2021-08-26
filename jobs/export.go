@@ -56,7 +56,7 @@ func (j *JobOperation) MarkDown() string {
 	htb.AddLine(fmt.Sprintf("Average Block Duration: %.4f seconds", j.Result.AverageBlockDuration))
 	htb.AddLine(fmt.Sprintf("Average Call Duration: %.4f seconds", j.Result.AverageCallDuration))
 	htb.AddLine(fmt.Sprintf("Authentication: %v", strconv.FormatBool(j.Authenticated())))
-	htb.AddLine(fmt.Sprintf("Time Taken: %v", fmt.Sprint(j.Result.TimeTaken)))
+	htb.AddLine(fmt.Sprintf("Time Taken: %.2f seconds", j.Result.TimeTaken.Seconds()))
 	htb.NewLine().NewLine()
 	statusDetailsHeader := md.CreateHeader()
 	statusDetailsHeader.H2("Status Results Details")
@@ -114,6 +114,9 @@ func (j *JobOperation) generateBlockTaskTable(document *markdown.Document) *mark
 	table.AddHeaderColumn("Tasks")
 	table.AddAlignedHeaderColumn("Duration", markdown.AlignRight)
 	table.AddAlignedHeaderColumn("Status Code", markdown.AlignCenter)
+	if j.Options.LogResult {
+		table.AddAlignedHeaderColumn("Content", markdown.AlignLeft)
+	}
 	for _, block := range *j.Result.BlockResults {
 		table.AddRow(fmt.Sprintf("Start of Block %v", block.BlockID), "", "", "")
 		bTask := *block.TaskResults
@@ -124,43 +127,87 @@ func (j *JobOperation) generateBlockTaskTable(document *markdown.Document) *mark
 			secondBlockEnd := halfItems + (itemBlocks / 2) + 1
 			firstHalf := bTask[0:itemBlocks]
 			for _, task := range firstHalf {
-				table.AddRow(
-					fmt.Sprintf("Block %v", task.BlockID),
-					fmt.Sprintf("Task %v", task.TaskID),
-					fmt.Sprintf("%.3f seconds", task.QueryDuration.Seconds),
-					fmt.Sprintf("%v", task.Status),
-				)
-			}
-			if secondBlockStart < secondBlockEnd {
-				table.AddRow("...", "...", "...", "...")
-				secondHalf := bTask[secondBlockStart:secondBlockEnd]
-				for _, task := range secondHalf {
+				if j.Options.LogResult {
+					table.AddRow(
+						fmt.Sprintf("Block %v", task.BlockID),
+						fmt.Sprintf("Task %v", task.TaskID),
+						fmt.Sprintf("%.2f seconds", task.QueryDuration.Seconds),
+						fmt.Sprintf("%v", task.Status),
+						fmt.Sprintf("%v", task.Content),
+					)
+				} else {
 					table.AddRow(
 						fmt.Sprintf("Block %v", task.BlockID),
 						fmt.Sprintf("Task %v", task.TaskID),
 						fmt.Sprintf("%.2f seconds", task.QueryDuration.Seconds),
 						fmt.Sprintf("%v", task.Status),
 					)
+
+				}
+			}
+			if secondBlockStart < secondBlockEnd {
+				table.AddRow("...", "...", "...", "...")
+				secondHalf := bTask[secondBlockStart:secondBlockEnd]
+				for _, task := range secondHalf {
+					if j.Options.LogResult {
+						table.AddRow(
+							fmt.Sprintf("Block %v", task.BlockID),
+							fmt.Sprintf("Task %v", task.TaskID),
+							fmt.Sprintf("%.2f seconds", task.QueryDuration.Seconds),
+							fmt.Sprintf("%v", task.Status),
+							fmt.Sprintf("%v", task.Content),
+						)
+					} else {
+						table.AddRow(
+							fmt.Sprintf("Block %v", task.BlockID),
+							fmt.Sprintf("Task %v", task.TaskID),
+							fmt.Sprintf("%.2f seconds", task.QueryDuration.Seconds),
+							fmt.Sprintf("%v", task.Status),
+						)
+
+					}
 				}
 			}
 			table.AddRow("...", "...", "...", "...")
 			thirdHalf := bTask[len(bTask)-itemBlocks:]
 			for _, task := range thirdHalf {
-				table.AddRow(
-					fmt.Sprintf("Block %v", task.BlockID),
-					fmt.Sprintf("Task %v", task.TaskID),
-					fmt.Sprintf("%.2f seconds", task.QueryDuration.Seconds),
-					fmt.Sprintf("%v", task.Status),
-				)
+				if j.Options.LogResult {
+					table.AddRow(
+						fmt.Sprintf("Block %v", task.BlockID),
+						fmt.Sprintf("Task %v", task.TaskID),
+						fmt.Sprintf("%.2f seconds", task.QueryDuration.Seconds),
+						fmt.Sprintf("%v", task.Status),
+						fmt.Sprintf("%v", task.Content),
+					)
+				} else {
+					table.AddRow(
+						fmt.Sprintf("Block %v", task.BlockID),
+						fmt.Sprintf("Task %v", task.TaskID),
+						fmt.Sprintf("%.2f seconds", task.QueryDuration.Seconds),
+						fmt.Sprintf("%v", task.Status),
+					)
+
+				}
 			}
 		} else {
 			for _, task := range bTask {
-				table.AddRow(
-					fmt.Sprintf("Block %v", task.BlockID),
-					fmt.Sprintf("Task %v", task.TaskID),
-					fmt.Sprintf("%.2f seconds", task.QueryDuration.Seconds),
-					fmt.Sprintf("%v", task.Status),
-				)
+				if j.Options.LogResult {
+					table.AddRow(
+						fmt.Sprintf("Block %v", task.BlockID),
+						fmt.Sprintf("Task %v", task.TaskID),
+						fmt.Sprintf("%.2f seconds", task.QueryDuration.Seconds),
+						fmt.Sprintf("%v", task.Status),
+						fmt.Sprintf("%v", task.Content),
+					)
+				} else {
+					table.AddRow(
+						fmt.Sprintf("Block %v", task.BlockID),
+						fmt.Sprintf("Task %v", task.TaskID),
+						fmt.Sprintf("%.2f seconds", task.QueryDuration.Seconds),
+						fmt.Sprintf("%v", task.Status),
+					)
+
+				}
 			}
 		}
 		table.AddRow("", "", "", "")

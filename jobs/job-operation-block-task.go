@@ -16,15 +16,17 @@ import (
 
 // JobOperationBlockTask Entity
 type JobOperationBlockTask struct {
-	ID      int
-	BlockID string
-	JobID   string
-	JobName *string
-	Timeout int
-	Target  *JobOperationTarget
-	Type    JobOPerationType
-	Result  *JobOperationBlockTaskResult
-	Verbose bool
+	ID              int
+	BlockID         string
+	JobID           string
+	JobName         *string
+	Timeout         int
+	Target          *JobOperationTarget
+	Type            JobOPerationType
+	MinTaskInterval Interval
+	MaxTaskInterval Interval
+	Result          *JobOperationBlockTaskResult
+	Verbose         bool
 }
 
 // CreateTask Creates a Task Inside a Job Block
@@ -44,6 +46,8 @@ func (j *JobOperationBlock) CreateTask(id int) *JobOperationBlockTask {
 	}
 
 	task.Verbose = helper.GetFlagSwitch("verbose", false)
+	task.MaxTaskInterval = j.MaxTaskInterval
+	task.MinTaskInterval = j.MinTaskInterval
 
 	if j.Tasks == nil {
 		tasks := make([]*JobOperationBlockTask, 0)
@@ -72,6 +76,13 @@ func (t *JobOperationBlockTask) Execute(wg *sync.WaitGroup) {
 	if t.Target.URL == "" {
 		wg.Done()
 		return
+	}
+
+	if t.MaxTaskInterval.Value() > t.MinTaskInterval.Value() {
+		waitFor := GetRandomBlockInterval(t.MaxTaskInterval, t.MinTaskInterval)
+		if waitFor > 0 {
+			time.Sleep(time.Duration(waitFor) * time.Millisecond)
+		}
 	}
 
 	if t.Verbose {
@@ -133,11 +144,18 @@ func (t *JobOperationBlockTask) Execute(wg *sync.WaitGroup) {
 		if strings.Contains(errorString, "target machine actively refused it") {
 			t.Result.QueryDuration = &queryDuration
 			t.Result.StatusCode = 408
-			t.Result.Status = "target machine actively refused connection"
+			t.Result.Status = "408 Request Timeout"
+			t.Result.ErrorMessage = errorString
 		} else {
 			t.Result.QueryDuration = &queryDuration
-			t.Result.StatusCode = 524
-			t.Result.Status = "err: " + errorString
+			if response != nil {
+				t.Result.StatusCode = response.StatusCode
+				t.Result.Status = response.Status
+			} else {
+				t.Result.StatusCode = 424
+				t.Result.Status = "424 Failed Dependency"
+			}
+			t.Result.ErrorMessage = errorString
 		}
 
 		wg.Done()
@@ -221,6 +239,7 @@ type JobOperationBlockTaskResult struct {
 	Status          string
 	StatusCode      int
 	Content         string
+	ErrorMessage    string
 	ResponseDetails *ResponseDetails
 }
 

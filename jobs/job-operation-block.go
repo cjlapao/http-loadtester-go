@@ -10,17 +10,21 @@ import (
 
 // JobOperationBlock Entity
 type JobOperationBlock struct {
-	ID           string
-	JobID        string
-	JobName      *string
-	Type         JobOPerationType
-	JobBlockType BlockType
-	BlockType    BlockType
-	Target       *JobOperationTarget
-	Tasks        *[]*JobOperationBlockTask
-	Result       *JobOperationBlockResult
-	WaitFor      Interval
-	Timeout      int
+	ID              string
+	JobID           string
+	JobName         *string
+	BlockPosition   int
+	TotalBlocks     int
+	Type            JobOPerationType
+	JobBlockType    BlockType
+	BlockType       BlockType
+	Target          *JobOperationTarget
+	Tasks           *[]*JobOperationBlockTask
+	Result          *JobOperationBlockResult
+	WaitFor         Interval
+	MaxTaskInterval Interval
+	MinTaskInterval Interval
+	Timeout         int
 }
 
 // CreateBlock Create a Block for the JobOperation
@@ -88,7 +92,7 @@ func (j *JobOperationBlock) Execute(wg *sync.WaitGroup) {
 
 	j.Result.TotalDurationInSeconds = duration.Seconds()
 
-	logger.Info("Finished processing %v Block %v, made %v %v calls to target", fmt.Sprint(j.JobBlockType), j.ID, fmt.Sprint(amountTasks), fmt.Sprint(j.BlockType))
+	logger.Info("Finished processing %v Block %v [%v/%v], made %v %v calls to target", fmt.Sprint(j.JobBlockType), j.ID, fmt.Sprint(j.BlockPosition), fmt.Sprint(j.TotalBlocks), fmt.Sprint(amountTasks), fmt.Sprint(j.BlockType))
 	wg.Done()
 }
 
@@ -130,16 +134,21 @@ func (r *JobOperationBlockResult) Process() {
 				}
 				responseStatusResult = append(responseStatusResult, &newStatusCode)
 			} else {
+				exists := false
 				for _, status := range responseStatusResult {
 					if status.Code == callResult.StatusCode {
 						status.Count++
-					} else {
-						newStatusCode := JobOperationTaskResponseStatusResult{
-							Code:  callResult.StatusCode,
-							Count: 1,
-						}
-						responseStatusResult = append(responseStatusResult, &newStatusCode)
+						exists = true
+						break
 					}
+				}
+
+				if !exists {
+					newStatusCode := JobOperationTaskResponseStatusResult{
+						Code:  callResult.StatusCode,
+						Count: 1,
+					}
+					responseStatusResult = append(responseStatusResult, &newStatusCode)
 				}
 			}
 

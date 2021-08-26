@@ -12,7 +12,7 @@
             },
             "args": [
                 "--file",
-                ".\\.local\\framework-sample.yml"
+                ".\\.local\\icf-sample.yml"
             ]
         }
     ]

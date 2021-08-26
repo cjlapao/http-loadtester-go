@@ -37,6 +37,7 @@ type LoadTestJobTarget struct {
 	BearerToken      string `json:"token" yaml:"token"`
 	ContentType      string `json:"contentType" yaml:"contentType"`
 	TimeoutInSeconds int    `json:"timeout" yaml:"timeout"`
+	LogResponse      bool   `json:"logResponse" yaml:"logResponse"`
 }
 
 // LoadTestConstantJob entity
@@ -47,9 +48,11 @@ type LoadTestConstantJob struct {
 
 // LoadTestConstantJobOptions Entity
 type LoadTestConstantJobOptions struct {
-	BlockType     string `json:"type" yaml:"type"`
-	BlockInterval int    `json:"blockInterval" yaml:"blockInterval"`
-	CallsPerBlock int    `json:"callsPerBlock" yaml:"callsPerBlock"`
+	BlockType       string `json:"type" yaml:"type"`
+	BlockInterval   int    `json:"blockInterval" yaml:"blockInterval"`
+	MaxTaskInterval int    `json:"maxTaskInterval" yaml:"maxTaskInterval"`
+	MinTaskInterval int    `json:"minTaskInterval" yaml:"minTaskInterval"`
+	CallsPerBlock   int    `json:"callsPerBlock" yaml:"callsPerBlock"`
 }
 
 // LoadTestIncreasingJob Entity
@@ -60,9 +63,11 @@ type LoadTestIncreasingJob struct {
 
 // LoadTestIncreasingJobOptions Entity
 type LoadTestIncreasingJobOptions struct {
-	BlockType     string `json:"type" yaml:"type"`
-	BlockInterval int    `json:"blockInterval" yaml:"blockInterval"`
-	TotalCalls    int    `json:"totalCalls" yaml:"totalCalls"`
+	BlockType       string `json:"type" yaml:"type"`
+	BlockInterval   int    `json:"blockInterval" yaml:"blockInterval"`
+	TotalCalls      int    `json:"totalCalls" yaml:"totalCalls"`
+	MaxTaskInterval int    `json:"maxTaskInterval" yaml:"maxTaskInterval"`
+	MinTaskInterval int    `json:"minTaskInterval" yaml:"minTaskInterval"`
 }
 
 // LoadTestFuzzyJob Entity
@@ -78,6 +83,8 @@ type LoadTestFuzzyJobOptions struct {
 	MinBlockInterval int    `json:"minBlockInterval" yaml:"minBlockInterval"`
 	MaxTasksPerBlock int    `json:"maxTaskPerBlock" yaml:"maxTaskPerBlock"`
 	MinTasksPerBlock int    `json:"minTaskPerBlock" yaml:"minTaskPerBlock"`
+	MaxTaskInterval  int    `json:"maxTaskInterval" yaml:"maxTaskInterval"`
+	MinTaskInterval  int    `json:"minTaskInterval" yaml:"minTaskInterval"`
 }
 
 // LoadTestJobOutput Entity
@@ -139,6 +146,10 @@ func ExecuteFromFile(filepath string) error {
 			job.Options.Timeout = 120
 		}
 
+		if loadTesterJob.Target.LogResponse {
+			job.Options.LogResult = true
+		}
+
 		if loadTesterJob.Target.Body != "" {
 			job.Target.Body = loadTesterJob.Target.Body
 		}
@@ -157,6 +168,10 @@ func ExecuteFromFile(filepath string) error {
 		if loadTesterJob.Target.TimeoutInSeconds > 0 {
 			job.Options.Timeout = loadTesterJob.Target.TimeoutInSeconds
 		}
+		if loadTesterJob.Target.LogResponse {
+			job.Target.logResponse = loadTesterJob.Target.LogResponse
+		}
+
 		if loadTesterJob.ConstantLoad != nil {
 			job.Type = Constant
 
@@ -177,6 +192,12 @@ func ExecuteFromFile(filepath string) error {
 			}
 			if loadTesterJob.ConstantLoad.Options.CallsPerBlock > 0 {
 				job.Options.TasksPerBlock = NewInterval(loadTesterJob.ConstantLoad.Options.CallsPerBlock)
+			}
+			if loadTesterJob.ConstantLoad.Options.MinTaskInterval > 0 {
+				job.Options.MinTaskInterval = NewInterval(loadTesterJob.ConstantLoad.Options.MinTaskInterval)
+			}
+			if loadTesterJob.ConstantLoad.Options.MaxTaskInterval > 0 {
+				job.Options.MaxTaskInterval = NewInterval(loadTesterJob.ConstantLoad.Options.MaxTaskInterval)
 			}
 			if loadTest.Report.MaxTaskOutput > 0 {
 				job.Options.MaxTaskOutput = loadTest.Report.MaxTaskOutput
@@ -201,6 +222,12 @@ func ExecuteFromFile(filepath string) error {
 			}
 			if loadTesterJob.IncreasingLoad.Options.TotalCalls > 0 {
 				job.Options.TasksPerBlock = NewInterval(loadTesterJob.IncreasingLoad.Options.TotalCalls)
+			}
+			if loadTesterJob.IncreasingLoad.Options.MinTaskInterval > 0 {
+				job.Options.MinTaskInterval = NewInterval(loadTesterJob.IncreasingLoad.Options.MinTaskInterval)
+			}
+			if loadTesterJob.IncreasingLoad.Options.MaxTaskInterval > 0 {
+				job.Options.MaxTaskInterval = NewInterval(loadTesterJob.IncreasingLoad.Options.MaxTaskInterval)
 			}
 			if loadTest.Report.MaxTaskOutput > 0 {
 				job.Options.MaxTaskOutput = loadTest.Report.MaxTaskOutput
@@ -231,6 +258,12 @@ func ExecuteFromFile(filepath string) error {
 			}
 			if loadTesterJob.FuzzyLoad.Options.MinTasksPerBlock > 0 {
 				job.Options.MinTasksPerBlock = NewInterval(loadTesterJob.FuzzyLoad.Options.MinTasksPerBlock)
+			}
+			if loadTesterJob.FuzzyLoad.Options.MinTaskInterval > 0 {
+				job.Options.MinTaskInterval = NewInterval(loadTesterJob.FuzzyLoad.Options.MinTaskInterval)
+			}
+			if loadTesterJob.FuzzyLoad.Options.MaxTaskInterval > 0 {
+				job.Options.MaxTaskInterval = NewInterval(loadTesterJob.FuzzyLoad.Options.MaxTaskInterval)
 			}
 			if loadTest.Report.MaxTaskOutput > 0 {
 				job.Options.MaxTaskOutput = loadTest.Report.MaxTaskOutput
