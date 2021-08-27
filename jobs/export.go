@@ -53,6 +53,11 @@ func (j *JobOperation) MarkDown() string {
 	}
 	htb.AddLine(fmt.Sprintf("Duration: %.2f seconds", j.Result.TotalDurationInSeconds))
 	htb.AddLine(fmt.Sprintf("Total Calls: %v, Succeeded: %v, Failed: %v", j.Result.TotalCalls, j.Result.TotalSucceededCalls, j.Result.TotalFailedCalls))
+	if j.Result.TotalFailedCalls > 0 {
+		percent := (float64(j.Result.TotalFailedCalls) * 100) / float64(j.Result.TotalCalls)
+		htb.AddLine(fmt.Sprintf("Percent Failed: %.1f%%", percent))
+	}
+	htb.AddLine(fmt.Sprintf("Time Taken: %.2f seconds", j.Result.TimeTaken.Seconds()))
 	htb.AddLine(fmt.Sprintf("Average Block Duration: %.4f seconds", j.Result.AverageBlockDuration))
 	htb.AddLine(fmt.Sprintf("Average Call Duration: %.4f seconds", j.Result.AverageCallDuration))
 	htb.AddLine(fmt.Sprintf("Authentication: %v", strconv.FormatBool(j.Authenticated())))

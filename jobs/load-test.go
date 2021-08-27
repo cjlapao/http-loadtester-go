@@ -31,13 +31,13 @@ type LoadTestJob struct {
 
 // LoadTestJobTarget Entity
 type LoadTestJobTarget struct {
-	URL              string `json:"url" yaml:"url"`
-	Method           string `json:"method" yaml:"method"`
-	Body             string `json:"body" yaml:"body"`
-	BearerToken      string `json:"token" yaml:"token"`
-	ContentType      string `json:"contentType" yaml:"contentType"`
-	TimeoutInSeconds int    `json:"timeout" yaml:"timeout"`
-	LogResponse      bool   `json:"logResponse" yaml:"logResponse"`
+	URL         string `json:"url" yaml:"url"`
+	Method      string `json:"method" yaml:"method"`
+	Body        string `json:"body" yaml:"body"`
+	BearerToken string `json:"token" yaml:"token"`
+	ContentType string `json:"contentType" yaml:"contentType"`
+	Timeout     int    `json:"timeout" yaml:"timeout"`
+	LogResponse bool   `json:"logResponse" yaml:"logResponse"`
 }
 
 // LoadTestConstantJob entity
@@ -141,9 +141,9 @@ func ExecuteFromFile(filepath string) error {
 			jName = strings.ReplaceAll(jName, "\\", "")
 			job.Name = &jName
 		}
-		job.Options.Timeout = loadTesterJob.Target.TimeoutInSeconds
+		job.Options.Timeout = loadTesterJob.Target.Timeout
 		if job.Options.Timeout == 0 {
-			job.Options.Timeout = 120
+			job.Options.Timeout = 120000
 		}
 
 		if loadTesterJob.Target.LogResponse {
@@ -165,8 +165,8 @@ func ExecuteFromFile(filepath string) error {
 		if loadTesterJob.Target.URL != "" {
 			job.Target.URL = loadTesterJob.Target.URL
 		}
-		if loadTesterJob.Target.TimeoutInSeconds > 0 {
-			job.Options.Timeout = loadTesterJob.Target.TimeoutInSeconds
+		if loadTesterJob.Target.Timeout > 0 {
+			job.Options.Timeout = loadTesterJob.Target.Timeout
 		}
 		if loadTesterJob.Target.LogResponse {
 			job.Target.logResponse = loadTesterJob.Target.LogResponse

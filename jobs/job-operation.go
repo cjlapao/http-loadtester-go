@@ -68,7 +68,7 @@ func CreateJobOperation() *JobOperation {
 		ID:            xid.New().String(),
 		OperationType: ParallelBlock,
 		Options: &JobOperationOptions{
-			Timeout:          120,
+			Timeout:          120000,
 			Verbose:          false,
 			Duration:         60,
 			MaxTaskOutput:    15,
@@ -106,7 +106,7 @@ func (j *JobOperation) generateBlocks() {
 	switch j.Type {
 	case Constant, Increasing:
 		if j.Options.BlockInterval.Value() <= 0 {
-			j.Options.BlockInterval = NewInterval(1)
+			j.Options.BlockInterval = NewInterval(0)
 		}
 		numberOfBlocks = j.Options.Duration / j.Options.BlockInterval.Value()
 		if numberOfBlocks > 0 {
@@ -222,20 +222,18 @@ func (j *JobOperation) Execute() error {
 		blockNum := i + 1
 		block.BlockPosition = blockNum
 		block.TotalBlocks = amountOfBlocks
+		logger.Info("Started processing %v Block %v [%v/%v], using %v load with %v %v tasks and %vms timeout", fmt.Sprint(j.OperationType), block.ID, fmt.Sprint(blockNum), fmt.Sprint(amountOfBlocks), fmt.Sprint(j.Type), fmt.Sprint(len(*block.Tasks)), fmt.Sprint(block.BlockType), fmt.Sprint(time.Duration(j.Options.Timeout)*time.Second))
 		switch j.OperationType {
 		case ParallelBlock:
-			logger.Info("Started processing Parallel Block %v [%v/%v], using %v load with %v %v tasks and %v timeout", block.ID, fmt.Sprint(blockNum), fmt.Sprint(amountOfBlocks), fmt.Sprint(j.Type), fmt.Sprint(len(*block.Tasks)), fmt.Sprint(block.BlockType), fmt.Sprint(time.Duration(j.Options.Timeout)*time.Second))
 			go block.Execute(&blockWaitingGroup)
 		case SequentialBlock:
-			logger.Info("Started processing Sequential Block %v [%v/%v], using %v load with %v %v tasks and %v timeout", block.ID, fmt.Sprint(blockNum), fmt.Sprint(amountOfBlocks), fmt.Sprint(j.Type), fmt.Sprint(len(*block.Tasks)), fmt.Sprint(block.BlockType), fmt.Sprint(time.Duration(j.Options.Timeout)*time.Second))
 			block.Execute(&blockWaitingGroup)
 		default:
-			logger.Info("Started processing Sequential Block %v [%v/%v], using %v load with %v %v tasks and %v timeout", block.ID, fmt.Sprint(blockNum), fmt.Sprint(amountOfBlocks), fmt.Sprint(j.Type), fmt.Sprint(len(*block.Tasks)), fmt.Sprint(block.BlockType), fmt.Sprint(time.Duration(j.Options.Timeout)*time.Second))
 			block.Execute(&blockWaitingGroup)
 		}
 		if block.WaitFor.Value() > 0 && i < len(j.Blocks) {
 			logger.Info("Waiting for %v before starting next block", fmt.Sprint(time.Duration(block.WaitFor.Value())*time.Second))
-			time.Sleep(time.Duration(block.WaitFor.Value()) * time.Second)
+			time.Sleep(time.Duration(block.WaitFor.Value()) * time.Millisecond)
 		}
 	}
 	blockWaitingGroup.Wait()
