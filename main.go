@@ -5,28 +5,27 @@ import (
 	"os"
 	"strings"
 
-	"github.com/cjlapao/common-go/executionctx"
 	"github.com/cjlapao/common-go/helper"
+	"github.com/cjlapao/common-go/log"
 	"github.com/cjlapao/common-go/restapi"
 	"github.com/cjlapao/common-go/version"
 	"github.com/cjlapao/http-loadtester-go/controller"
 	"github.com/cjlapao/http-loadtester-go/jobs"
 )
 
-var services = executionctx.GetServiceProvider()
-var logger = services.Logger
-var versionSvc = services.Version
+var logger = log.Get()
+var versionSvc = version.Get()
 var api = restapi.NewHttpListener()
 
 func main() {
 	jobs.NewRand()
 
-	logger.EnableTimestamp()
+	logger.WithTimestamp()
 	versionSvc.Name = "HTTP LoadTester"
 	versionSvc.Author = "carlos Lapao"
 	versionSvc.License = "MIT"
 	versionSvc.Minor = 1
-	versionSvc.Build = 6
+	versionSvc.Build = 7
 	getVersion := helper.GetFlagSwitch("version", false)
 	if getVersion {
 		format := helper.GetFlagValue("o", "json")
@@ -47,7 +46,7 @@ func main() {
 	apiMode := helper.GetFlagSwitch("api", false)
 
 	if apiMode {
-		api.AddAuthentication().AddHealthCheck().AddLogger().Start()
+		api.AddLogger().AddHealthCheck().Start()
 		api.AddController(controller.TestController, "/test")
 	} else {
 		if file != "" {

@@ -11,8 +11,8 @@
                 "LOADTEST_DEBUG": "true",
             },
             "args": [
-                "--api",
-                ".\\.local\\icf-sample.yml"
+                "--file",
+                ".\\.local\\fuzzy_load.yml"
             ]
         }
     ]
