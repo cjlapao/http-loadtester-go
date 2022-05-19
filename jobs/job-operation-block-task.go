@@ -152,8 +152,8 @@ func (t *JobOperationBlockTask) Execute(wg *sync.WaitGroup) {
 				t.Result.StatusCode = response.StatusCode
 				t.Result.Status = response.Status
 			} else {
-				t.Result.StatusCode = 424
-				t.Result.Status = "424 Failed Dependency"
+				t.Result.StatusCode = 999
+				t.Result.Status = "xxx Empty Response"
 			}
 			t.Result.ErrorMessage = errorString
 		}
