@@ -1,4 +1,4 @@
-apiVersion: policy/v1beta1
+apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: {{ include "http-load-tester.fullname" .}}
@@ -7,4 +7,4 @@ spec:
   minAvailable: 1
   selector:
     matchLabels:
-    {{- include "http-load-tester.selectorLabels" . | nindent 4 }}
+    {{- include "http-load-tester.selectorLabels" . | nindent 6 }}

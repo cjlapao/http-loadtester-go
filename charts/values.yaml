@@ -5,7 +5,7 @@ namespace:
 secrets:
 
 config:
-  api_prefix: /api
+  api_prefix: /api/load-tester
 
 app:
   serviceAccount:
@@ -37,7 +37,7 @@ ingress:
   enabled: true
   type: 'istio'
   gateway: 
-    name: proxy
+    name: ivanticloud-default-gateway
     namespace: istio-system
   hosts:
     - host: '*'

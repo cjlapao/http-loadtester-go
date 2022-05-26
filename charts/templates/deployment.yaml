@@ -25,7 +25,7 @@ spec:
         - containerPort: {{ .Values.app.port }}
         env:
         - name: HTTP_PORT
-          value: {{ .Values.app.port }}
+          value: {{ .Values.app.port | quote }}
 
         - name: API_PREFIX
           valueFrom:

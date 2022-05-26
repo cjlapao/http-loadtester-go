@@ -7,7 +7,9 @@ import (
 
 func Init() {
 	listener := restapi.GetHttpListener()
-	listener.AddJsonContent().AddLogger().AddHealthCheck()
-	listener.AddController(controller.LoadController, "/load-tester/start", "POST")
+	listener.AddLogger().AddHealthCheck()
+	listener.AddController(controller.LoadController, "/start", "POST")
+	listener.AddController(controller.StartLoadFileController, "/start/file", "POST")
+	listener.AddController(controller.StartLoadMarkdownController, "/start/markdown", "POST")
 	listener.Start()
 }

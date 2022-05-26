@@ -3,9 +3,9 @@ entries:
   http-load-tester:
   - apiVersion: v2
     appVersion: 0.2.0
-    created: "2022-05-26T08:12:14.9267226+01:00"
+    created: "2022-05-26T08:56:03.8124939+01:00"
     description: High performance load tester for http calls
-    digest: 5cd92816103d8d83ec9a7952d413e09a7922e7d1e5837ef804d281e745754d63
+    digest: dbbeb9f9cef577b3e2cc3a00c6b2f70bb54bcafaf52836c223e50a4407d764dd
     name: http-load-tester
     type: application
     urls:
@@ -14,7 +14,7 @@ entries:
   http-loadtester:
   - apiVersion: v2
     appVersion: 1.16.0
-    created: "2022-05-26T08:12:14.9277227+01:00"
+    created: "2022-05-26T08:56:03.815495+01:00"
     description: A Helm chart for Kubernetes
     digest: 7de86aa6b0baf573a56dddcc3b9e1c823d65763d339bdce0f6b48d3ac5bc0c55
     name: http-loadtester
@@ -22,4 +22,4 @@ entries:
     urls:
     - http-loadtester-0.1.0.tgz
     version: 0.1.0
-generated: "2022-05-26T08:12:14.9247239+01:00"
+generated: "2022-05-26T08:56:03.8105319+01:00"

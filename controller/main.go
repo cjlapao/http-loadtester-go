@@ -39,6 +39,58 @@ func LoadController(w http.ResponseWriter, r *http.Request) {
 		response = append(response, responseItem)
 	}
 
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Disposition", "attachment; filename=\"api.json\"")
+
 	w.WriteHeader(http.StatusOK)
+
 	json.NewEncoder(w).Encode(response)
+}
+
+func StartLoadFileController(w http.ResponseWriter, r *http.Request) {
+	var body jobs.LoadTest
+
+	err := http_helper.MapRequestBody(r, &body)
+
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	results, err := jobs.ExecuteLoadTest(body)
+
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Header().Set("Content-Disposition", "attachment; filename=\""+body.DisplayName+".md\"")
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(results[0].MarkDown()))
+}
+
+func StartLoadMarkdownController(w http.ResponseWriter, r *http.Request) {
+	var body jobs.LoadTest
+
+	err := http_helper.MapRequestBody(r, &body)
+
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	results, err := jobs.ExecuteLoadTest(body)
+
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "plain/text")
+	w.Header().Set("Content-Disposition", "attachment; filename=\""+body.DisplayName+".md\"")
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(results[0].MarkDown()))
 }
