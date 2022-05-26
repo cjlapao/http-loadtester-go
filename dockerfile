@@ -7,7 +7,7 @@ FROM golang:alpine AS builder
 # Git is required for fetching the dependencies.
 RUN apk update && apk add --no-cache git
 
-WORKDIR /go/src/cjlapao/http-loadtester-go
+WORKDIR /go/src/cjlapao/http-loadtester
 
 COPY . .
 
@@ -15,7 +15,7 @@ COPY . .
 RUN go get -d -v
 
 # Build the binary.
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o /go/bin/http_loadtester
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o /go/bin/http-loadtester
 
 ############################
 # STEP 2 build a small image
@@ -23,8 +23,9 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o /go/bin/h
 FROM scratch
 
 # Copy our static executable.
-COPY --from=builder /go/bin/http_loadtester /go/bin/http_loadtester
-RUN chmod +x /go/bin/http_loadtester
+COPY --from=builder /go/bin/http-loadtester /go/bin/http-loadtester
+
+WORKDIR /go/bin
 
 EXPOSE 80
-ENTRYPOINT ["/go/bin/http_loadtester-go", "api"]
+ENTRYPOINT ["/go/bin/http-loadtester"]

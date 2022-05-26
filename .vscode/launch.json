@@ -7,12 +7,10 @@
             "request": "launch",
             "mode": "debug",
             "program": "${workspaceFolder}/main.go",
-            "env": {
-                "LOADTEST_DEBUG": "true",
-            },
+            // Comment out if you need to setup environment variables for the module
+            "envFile": "${workspaceFolder}/.env",
             "args": [
-                "--file",
-                ".\\.local\\fuzzy_load.yml"
+                "--api"
             ]
         }
     ]

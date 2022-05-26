@@ -2,8 +2,6 @@ module github.com/cjlapao/http-loadtester-go
 
 go 1.18
 
-replace github.com/cjlapao/common-go => ../common-go
-
 require (
 	github.com/cjlapao/common-go v0.0.20
 	github.com/cjlapao/markdown-go v0.0.6

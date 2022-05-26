@@ -114,16 +114,47 @@ func ExecuteFromFile(filepath string) error {
 		logger.Error(err.Error())
 		return err
 	}
+
+	jobs, err := ExecuteLoadTest(loadTest)
+	if err != nil {
+		return err
+	}
+
+	if loadTest.Report.OutputToFile {
+		for _, job := range jobs {
+			job.ExportReportToFile()
+			logger.Success("Finished creating reports for job %v", *job.Name)
+		}
+	} else {
+		for _, job := range jobs {
+			fmt.Println(job.MarkDown())
+			logger.Success("Finished creating reports for job %v", *job.Name)
+		}
+	}
+	if loadTest.Report.OutputResults {
+		for _, job := range jobs {
+
+			job.ExportOutputToFile()
+			logger.Success("Finished creating reports for job %v", *job.Name)
+		}
+	}
+
+	return nil
+}
+
+func ExecuteLoadTest(loadTest LoadTest) ([]JobOperation, error) {
 	if loadTest.DisplayName != "" {
 		logger.Success("Testing File %v ", loadTest.DisplayName)
 	}
+	result := make([]JobOperation, 0)
 
 	for i, loadTesterJob := range loadTest.Jobs {
 		if loadTesterJob.Target.URL == "" {
 			err := errors.New("Url was not defined")
 			logger.Error(err.Error())
-			return err
+			return result, err
 		}
+
 		job := CreateJobOperation()
 
 		switch strings.ToLower(loadTesterJob.Type) {
@@ -275,15 +306,8 @@ func ExecuteFromFile(filepath string) error {
 		logger.Success("Finished executing job %v, generating reports...", *job.Name)
 		endTime := time.Now()
 		job.Result.TimeTaken = endTime.Sub(startTime)
-		if loadTest.Report.OutputToFile {
-			job.ExportReportToFile()
-		} else {
-			fmt.Println(job.MarkDown())
-		}
-		if loadTest.Report.OutputResults {
-			job.ExportOutputToFile()
-		}
-		logger.Success("Finished creating reports for job %v", *job.Name)
+
+		result = append(result, *job)
 		if i < len(loadTest.Jobs)-1 {
 			if loadTest.WaitBetweenJobs > 0 {
 				logger.Info("Waiting for %v seconds for the next job...", fmt.Sprint(loadTest.WaitBetweenJobs))
@@ -291,5 +315,6 @@ func ExecuteFromFile(filepath string) error {
 			}
 		}
 	}
-	return nil
+
+	return result, nil
 }

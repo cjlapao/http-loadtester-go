@@ -108,7 +108,7 @@ func (j *JobOperation) generateBlocks() {
 		if j.Options.BlockInterval.Value() <= 0 {
 			j.Options.BlockInterval = NewInterval(0)
 		}
-		numberOfBlocks = j.Options.Duration / j.Options.BlockInterval.Value()
+		numberOfBlocks = j.Options.Duration
 		if numberOfBlocks > 0 {
 			for i := 0; i < numberOfBlocks; i++ {
 				block := j.CreateBlock()
@@ -123,7 +123,7 @@ func (j *JobOperation) generateBlocks() {
 			j.Options.MaxBlockInterval = NewInterval(1)
 			j.Options.MinBlockInterval = NewInterval(1)
 		}
-		numberOfBlocks = j.Options.Duration / j.Options.MaxBlockInterval.Value()
+		numberOfBlocks = j.Options.Duration
 		if numberOfBlocks > 0 {
 			for i := 0; i < numberOfBlocks; i++ {
 				block := j.CreateBlock()
@@ -215,14 +215,28 @@ func (j *JobOperation) Execute() error {
 	j.Result = j.CreateLoadJobResult()
 	var blockWaitingGroup sync.WaitGroup
 	blockWaitingGroup.Add(amountOfBlocks)
-	logger.Command("Performing a Load Test on %v for %v seconds\nThis can take longer depending on the pressure of the tasks being performed", j.Target.URL, fmt.Sprint(j.Options.Duration))
+	startupLogEntry := fmt.Sprintf("Performing a Load Test on %v for ", j.Target.URL)
+	switch j.Type {
+	case Constant:
+		startupLogEntry += fmt.Sprintf("%v seconds", fmt.Sprint(j.Options.Duration))
+		logger.Command(startupLogEntry)
+		logger.Command("This can take longer depending on the pressure of the tasks being performed")
+	case Increasing:
+		startupLogEntry += fmt.Sprintf("%v seconds", fmt.Sprint(j.Options.Duration))
+		logger.Command(startupLogEntry)
+		logger.Command("This can take longer depending on the pressure of the tasks being performed")
+	case Fuzzy:
+		startupLogEntry += fmt.Sprintf("%v blocks", fmt.Sprint(j.Options.Duration))
+		logger.Command(startupLogEntry)
+	}
+
 	startingTime := time.Now().UTC()
 	// Executing the blocks
 	for i, block := range j.Blocks {
 		blockNum := i + 1
 		block.BlockPosition = blockNum
 		block.TotalBlocks = amountOfBlocks
-		logger.Info("Started processing %v Block %v [%v/%v], using %v load with %v %v tasks and %vms timeout", fmt.Sprint(j.OperationType), block.ID, fmt.Sprint(blockNum), fmt.Sprint(amountOfBlocks), fmt.Sprint(j.Type), fmt.Sprint(len(*block.Tasks)), fmt.Sprint(block.BlockType), fmt.Sprint(time.Duration(j.Options.Timeout)*time.Second))
+		logger.Info("Started processing %v Block %v [%v/%v], using %v load with %v %v tasks and %v timeout", fmt.Sprint(j.OperationType), block.ID, fmt.Sprint(blockNum), fmt.Sprint(amountOfBlocks), fmt.Sprint(j.Type), fmt.Sprint(len(*block.Tasks)), fmt.Sprint(block.BlockType), fmt.Sprint(time.Duration(j.Options.Timeout)*time.Millisecond))
 		switch j.OperationType {
 		case ParallelBlock:
 			go block.Execute(&blockWaitingGroup)
@@ -232,8 +246,9 @@ func (j *JobOperation) Execute() error {
 			block.Execute(&blockWaitingGroup)
 		}
 		if block.WaitFor.Value() > 0 && i < len(j.Blocks) {
-			logger.Info("Waiting for %v before starting next block", fmt.Sprint(time.Duration(block.WaitFor.Value())*time.Second))
+			logger.Info("Waiting for %v before starting next block", fmt.Sprint(time.Duration(block.WaitFor.Value())*time.Millisecond))
 			time.Sleep(time.Duration(block.WaitFor.Value()) * time.Millisecond)
+			logger.Info("stopped waiting")
 		}
 	}
 	blockWaitingGroup.Wait()

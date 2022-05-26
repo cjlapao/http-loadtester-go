@@ -9,8 +9,8 @@ import (
 	"github.com/cjlapao/common-go/log"
 	"github.com/cjlapao/common-go/restapi"
 	"github.com/cjlapao/common-go/version"
-	"github.com/cjlapao/http-loadtester-go/controller"
 	"github.com/cjlapao/http-loadtester-go/jobs"
+	"github.com/cjlapao/http-loadtester-go/startup"
 )
 
 var logger = log.Get()
@@ -24,8 +24,8 @@ func main() {
 	versionSvc.Name = "HTTP LoadTester"
 	versionSvc.Author = "carlos Lapao"
 	versionSvc.License = "MIT"
-	versionSvc.Minor = 1
-	versionSvc.Build = 7
+	versionSvc.Minor = 2
+	versionSvc.Build = 0
 	getVersion := helper.GetFlagSwitch("version", false)
 	if getVersion {
 		format := helper.GetFlagValue("o", "json")
@@ -41,13 +41,17 @@ func main() {
 	}
 	versionSvc.PrintAnsiHeader()
 
-	file := helper.GetFlagValue("file", "")
+	file := ""
+	if helper.FileExists("config.yml") {
+		file = "config.yml"
+	} else {
+		file = helper.GetFlagValue("file", "")
+	}
 
 	apiMode := helper.GetFlagSwitch("api", false)
 
 	if apiMode {
-		api.AddLogger().AddHealthCheck().Start()
-		api.AddController(controller.TestController, "/test")
+		startup.Init()
 	} else {
 		if file != "" {
 			err := jobs.ExecuteFromFile(file)
