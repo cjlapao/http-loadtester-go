@@ -89,9 +89,10 @@ type LoadTestFuzzyJobOptions struct {
 
 // LoadTestJobOutput Entity
 type LoadTestJobOutput struct {
-	MaxTaskOutput int  `json:"maxTaskOutput" yaml:"maxTaskOutput"`
-	OutputResults bool `json:"outputResults" yaml:"outputResults"`
-	OutputToFile  bool `json:"outputToFile" yaml:"outputToFile"`
+	MaxTaskOutput    int    `json:"maxTaskOutput" yaml:"maxTaskOutput"`
+	OutputResults    bool   `json:"outputResults" yaml:"outputResults"`
+	OutputToFile     bool   `json:"outputToFile" yaml:"outputToFile"`
+	OutputToFilePath string `json:"outputToFilePath" yaml:"outputToFilePath"`
 }
 
 // ExecuteFromFile Execute LoadTest from file
@@ -122,7 +123,7 @@ func ExecuteFromFile(filepath string) error {
 
 	if loadTest.Report.OutputToFile {
 		for _, job := range jobs {
-			job.ExportReportToFile()
+			job.ExportReportToFile(loadTest.Report.OutputToFilePath)
 			logger.Success("Finished creating reports for job %v", *job.Name)
 		}
 	} else {
@@ -134,7 +135,7 @@ func ExecuteFromFile(filepath string) error {
 	if loadTest.Report.OutputResults {
 		for _, job := range jobs {
 
-			job.ExportOutputToFile()
+			job.ExportOutputToFile(loadTest.Report.OutputToFilePath)
 			logger.Success("Finished creating reports for job %v", *job.Name)
 		}
 	}

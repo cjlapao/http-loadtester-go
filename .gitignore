@@ -78,3 +78,7 @@ testem.log
 # System Files
 .DS_Store
 Thumbs.db
+/reports/*.md
+/reports/*.yml
+/reports/*.yaml
+/reports/*.json

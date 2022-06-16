@@ -91,10 +91,10 @@ func (t *JobOperationBlockTask) Execute(wg *sync.WaitGroup) {
 
 	// Implementing defined minutes timeout
 	client := &http.Client{
-		Timeout: time.Duration(t.Timeout) * time.Second,
+		Timeout: time.Duration(t.Timeout) * time.Millisecond,
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(t.Timeout)*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(t.Timeout)*time.Millisecond)
 	defer cancel()
 
 	var response *http.Response
@@ -144,7 +144,7 @@ func (t *JobOperationBlockTask) Execute(wg *sync.WaitGroup) {
 		if strings.Contains(errorString, "target machine actively refused it") {
 			t.Result.QueryDuration = &queryDuration
 			t.Result.StatusCode = 408
-			t.Result.Status = "408 Request Timeout"
+			t.Result.Status = "4xx Target machine actively refused it"
 			t.Result.ErrorMessage = errorString
 		} else {
 			t.Result.QueryDuration = &queryDuration

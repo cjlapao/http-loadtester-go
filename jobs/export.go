@@ -3,6 +3,7 @@ package jobs
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/cjlapao/common-go/helper"
@@ -11,27 +12,51 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+const (
+	DDMMYYYYhhmmss = "2006_01_02_T15_04_05"
+)
+
 // ExportReportToFile Exports a Job Report to a File
-func (j *JobOperation) ExportReportToFile() {
+func (j *JobOperation) ExportReportToFile(path string) {
 	content := j.MarkDown()
-	name := j.Name
-	if *name != j.ID {
-		*name += "_" + j.ID
+	if path == "" {
+		path = "./"
+	} else {
+		if !strings.HasSuffix(path, "/") {
+			path = fmt.Sprintf("%v/", path)
+		}
 	}
-	helper.WriteToFile(content, "job_"+*name+"_report.md")
+
+	name := *j.Name + "_" + time.Now().Format(DDMMYYYYhhmmss)
+	if name != j.ID {
+		name += "_" + j.ID
+	}
+
+	fullPath := fmt.Sprintf("%vjob_%v_output.md", path, name)
+	helper.WriteToFile(content, fullPath)
 }
 
 // ExportOutputToFile Exports a job result to a file
-func (j *JobOperation) ExportOutputToFile() {
+func (j *JobOperation) ExportOutputToFile(path string) {
 	stringContent, err := yaml.Marshal(j.Result)
 	if err != nil {
 		return
 	}
-	name := j.Name
-	if *name != j.ID {
-		*name += "_" + j.ID
+	if path == "" {
+		path = "./"
+	} else {
+		if !strings.HasSuffix(path, "/") {
+			path = fmt.Sprintf("%v/", path)
+		}
 	}
-	helper.WriteToFile(string(stringContent), "job_"+*name+"_output.yml")
+
+	name := *j.Name + "_" + time.Now().Format(DDMMYYYYhhmmss)
+	if name != j.ID {
+		name += "_" + j.ID
+	}
+
+	fullPath := fmt.Sprintf("%vjob_%v_output.yml", path, name)
+	helper.WriteToFile(string(stringContent), fullPath)
 }
 
 // MarkDown Generates a Job Markdown report
