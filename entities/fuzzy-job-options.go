@@ -1,7 +1,7 @@
 package entities
 
-// LoadTestFuzzyJobOptions Entity
-type LoadTestFuzzyJobOptions struct {
+// FuzzyJobOptions Entity
+type FuzzyJobOptions struct {
 	BlockType        string `json:"type" yaml:"type"`
 	MaxBlockInterval int    `json:"maxBlockInterval" yaml:"maxBlockInterval"`
 	MinBlockInterval int    `json:"minBlockInterval" yaml:"minBlockInterval"`

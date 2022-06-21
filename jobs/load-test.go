@@ -16,7 +16,7 @@ import (
 // ExecuteFromFile Execute LoadTest from file
 func ExecuteFromFile(filepath string) error {
 	if !helper.FileExists(filepath) {
-		err := errors.New("File was not found")
+		err := errors.New("file not found")
 		logger.Error(err.Error())
 		return err
 	}
@@ -63,7 +63,7 @@ func ExecuteFromFile(filepath string) error {
 
 func ExecuteLoadTest(loadTest entities.LoadTest) ([]*JobOperation, error) {
 	if loadTest.DisplayName != "" {
-		logger.Success("Testing File %v ", loadTest.DisplayName)
+		logger.Success("Starting %v load test.", loadTest.DisplayName)
 	}
 	loadTesterJobs := make([]*JobOperation, 0)
 

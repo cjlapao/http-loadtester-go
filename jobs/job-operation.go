@@ -79,7 +79,7 @@ func CreateJobOperation() *JobOperation {
 			MinTasksPerBlock: NewInterval(10),
 			MaxTaskInterval:  NewInterval(0),
 			MinTaskInterval:  NewInterval(0),
-			BlockInterval:    NewInterval(1),
+			BlockInterval:    NewInterval(0),
 			TasksPerBlock:    NewInterval(60),
 		},
 	}

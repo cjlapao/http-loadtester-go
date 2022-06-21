@@ -1,7 +1,7 @@
 package entities
 
-// LoadTestConstantJobOptions Entity
-type LoadTestConstantJobOptions struct {
+// ConstantJobOptions Entity
+type ConstantJobOptions struct {
 	BlockType       string `json:"type" yaml:"type"`
 	BlockInterval   int    `json:"blockInterval" yaml:"blockInterval"`
 	MaxTaskInterval int    `json:"maxTaskInterval" yaml:"maxTaskInterval"`

@@ -18,8 +18,6 @@ var versionSvc = version.Get()
 var api = restapi.NewHttpListener()
 
 func main() {
-	jobs.NewRand()
-
 	logger.WithTimestamp()
 	versionSvc.Name = "HTTP LoadTester"
 	versionSvc.Author = "carlos Lapao"

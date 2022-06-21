@@ -1,8 +1,9 @@
 package entities
 
-// LoadTestJobTarget Entity
-type LoadTestJobTarget struct {
+// JobTarget Entity
+type JobTarget struct {
 	URL          string   `json:"url" yaml:"url"`
+	URLs         []string `json:"urls" yaml:"urls"`
 	Method       string   `json:"method" yaml:"method"`
 	Body         string   `json:"body" yaml:"body"`
 	BearerToken  string   `json:"token" yaml:"token"`
