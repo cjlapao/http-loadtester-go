@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/cjlapao/common-go/helper"
@@ -17,6 +18,7 @@ type LoadTest struct {
 	Jobs            []LoadTestJob     `json:"jobs" yaml:"jobs"`
 	Report          LoadTestJobOutput `json:"report" yaml:"report"`
 	WaitBetweenJobs int               `json:"waitBetweenJobs" yaml:"waitBetweenJobs"`
+	JobType         string            `json:"type" yaml:"type"`
 }
 
 // LoadTestJob Entity
@@ -31,13 +33,14 @@ type LoadTestJob struct {
 
 // LoadTestJobTarget Entity
 type LoadTestJobTarget struct {
-	URL         string `json:"url" yaml:"url"`
-	Method      string `json:"method" yaml:"method"`
-	Body        string `json:"body" yaml:"body"`
-	BearerToken string `json:"token" yaml:"token"`
-	ContentType string `json:"contentType" yaml:"contentType"`
-	Timeout     int    `json:"timeout" yaml:"timeout"`
-	LogResponse bool   `json:"logResponse" yaml:"logResponse"`
+	URL          string   `json:"url" yaml:"url"`
+	Method       string   `json:"method" yaml:"method"`
+	Body         string   `json:"body" yaml:"body"`
+	BearerToken  string   `json:"token" yaml:"token"`
+	BearerTokens []string `json:"tokens" yaml:"tokens"`
+	ContentType  string   `json:"contentType" yaml:"contentType"`
+	Timeout      int      `json:"timeout" yaml:"timeout"`
+	LogResponse  bool     `json:"logResponse" yaml:"logResponse"`
 }
 
 // LoadTestConstantJob entity
@@ -143,17 +146,17 @@ func ExecuteFromFile(filepath string) error {
 	return nil
 }
 
-func ExecuteLoadTest(loadTest LoadTest) ([]JobOperation, error) {
+func ExecuteLoadTest(loadTest LoadTest) ([]*JobOperation, error) {
 	if loadTest.DisplayName != "" {
 		logger.Success("Testing File %v ", loadTest.DisplayName)
 	}
-	result := make([]JobOperation, 0)
+	loadTesterJobs := make([]*JobOperation, 0)
 
-	for i, loadTesterJob := range loadTest.Jobs {
+	for _, loadTesterJob := range loadTest.Jobs {
 		if loadTesterJob.Target.URL == "" {
 			err := errors.New("Url was not defined")
 			logger.Error(err.Error())
-			return result, err
+			return loadTesterJobs, err
 		}
 
 		job := CreateJobOperation()
@@ -189,7 +192,12 @@ func ExecuteLoadTest(loadTest LoadTest) ([]JobOperation, error) {
 			job.Target.ContentType = loadTesterJob.Target.ContentType
 		}
 		if loadTesterJob.Target.BearerToken != "" {
-			job.Target.JwtToken = loadTesterJob.Target.BearerToken
+			job.Target.JwtTokens = append(job.Target.JwtTokens, loadTesterJob.Target.BearerToken)
+		}
+		if loadTesterJob.Target.BearerTokens != nil && len(loadTesterJob.Target.BearerTokens) > 0 {
+			for _, token := range loadTesterJob.Target.BearerTokens {
+				job.Target.JwtTokens = append(job.Target.JwtTokens, token)
+			}
 		}
 		if loadTesterJob.Target.Method != "" {
 			job.Target.Method = job.Target.Method.Get(loadTesterJob.Target.Method)
@@ -301,21 +309,36 @@ func ExecuteLoadTest(loadTest LoadTest) ([]JobOperation, error) {
 				job.Options.MaxTaskOutput = loadTest.Report.MaxTaskOutput
 			}
 		}
-		logger.Success("Starting job %v execution.", *job.Name)
-		startTime := time.Now()
-		job.Execute()
-		logger.Success("Finished executing job %v, generating reports...", *job.Name)
-		endTime := time.Now()
-		job.Result.TimeTaken = endTime.Sub(startTime)
 
-		result = append(result, *job)
+		loadTesterJobs = append(loadTesterJobs, job)
+	}
+	logger.Success("Created successfully %v job instructions to execute", fmt.Sprintf("%v", len(loadTesterJobs)))
+
+	var loadTestJobsWaitGroup sync.WaitGroup
+	loadTestJobsWaitGroup.Add(len(loadTest.Jobs))
+
+	for i, jobToExecute := range loadTesterJobs {
+		switch strings.ToLower(loadTest.JobType) {
+		case "parallel":
+			logger.Command("Executing job %v in parallel", *jobToExecute.Name)
+			go jobToExecute.Execute(&loadTestJobsWaitGroup)
+		case "sequential":
+			logger.Command("Executing job %v in sequence", *jobToExecute.Name)
+			jobToExecute.Execute(&loadTestJobsWaitGroup)
+		default:
+			logger.Command("Executing job %v in sequence", *jobToExecute.Name)
+			jobToExecute.Execute(&loadTestJobsWaitGroup)
+		}
+
 		if i < len(loadTest.Jobs)-1 {
 			if loadTest.WaitBetweenJobs > 0 {
-				logger.Info("Waiting for %v seconds for the next job...", fmt.Sprint(loadTest.WaitBetweenJobs))
-				time.Sleep(time.Duration(loadTest.WaitBetweenJobs) * time.Second)
+				logger.Info("Waiting for %v Millisecond for the next job...", fmt.Sprint(loadTest.WaitBetweenJobs))
+				time.Sleep(time.Duration(loadTest.WaitBetweenJobs) * time.Millisecond)
 			}
 		}
 	}
 
-	return result, nil
+	loadTestJobsWaitGroup.Wait()
+
+	return loadTesterJobs, nil
 }

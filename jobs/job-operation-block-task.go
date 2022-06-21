@@ -3,9 +3,11 @@ package jobs
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"crypto/tls"
 	"fmt"
 	"io/ioutil"
+	"math/big"
 	"net/http"
 	"strings"
 	"sync"
@@ -118,8 +120,9 @@ func (t *JobOperationBlockTask) Execute(wg *sync.WaitGroup) {
 	}
 
 	if request != nil {
-		if t.Target.JwtToken != "" {
-			request.Header.Set("Authorization", "Bearer "+t.Target.JwtToken)
+		if t.Target.JwtTokens != nil || len(t.Target.JwtTokens) > 0 {
+			token := t.getRandomJwtToken()
+			request.Header.Set("Authorization", "Bearer "+token)
 		}
 		if t.Target.ContentType != "" {
 			request.Header.Set("Content-Type", t.Target.ContentType)
@@ -227,6 +230,22 @@ func getIP(r *http.Request) string {
 		return forwarded
 	}
 	return r.RemoteAddr
+}
+
+func (j *JobOperationBlockTask) getRandomJwtToken() string {
+	if len(j.Target.JwtTokens) == 1 {
+		return j.Target.JwtTokens[0]
+	}
+
+	max := len(j.Target.JwtTokens)
+
+	nBig, err := rand.Int(rand.Reader, big.NewInt(int64(max)))
+	if err != nil {
+		nBig = big.NewInt(0)
+		logger.Error("There was an error getting random jwt, using index 0")
+	}
+
+	return j.Target.JwtTokens[nBig.Int64()]
 }
 
 // JobOperationBlockTaskResult Entity

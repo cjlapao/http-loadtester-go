@@ -209,20 +209,21 @@ func (j *JobOperation) getRandomTaskCount() int {
 
 // Execute Executes a Job Operation creating X amount of blocks that will be run every X seconds
 // This will be defined by the amount of blocks the duration of the load test
-func (j *JobOperation) Execute() error {
+func (j *JobOperation) Execute(wg *sync.WaitGroup) error {
+	startingJobTime := time.Now().UTC()
 	j.generateBlocks()
 	amountOfBlocks := len(j.Blocks)
 	j.Result = j.CreateLoadJobResult()
 	var blockWaitingGroup sync.WaitGroup
 	blockWaitingGroup.Add(amountOfBlocks)
-	startupLogEntry := fmt.Sprintf("Performing a Load Test on %v for ", j.Target.URL)
+	startupLogEntry := fmt.Sprintf("Performing a Load Test on %v", j.Target.URL)
 	switch j.Type {
 	case Constant:
-		startupLogEntry += fmt.Sprintf("%v seconds", fmt.Sprint(j.Options.Duration))
+		startupLogEntry += fmt.Sprintf("%v blocks", fmt.Sprint(j.Options.Duration))
 		logger.Command(startupLogEntry)
 		logger.Command("This can take longer depending on the pressure of the tasks being performed")
 	case Increasing:
-		startupLogEntry += fmt.Sprintf("%v seconds", fmt.Sprint(j.Options.Duration))
+		startupLogEntry += fmt.Sprintf("%v blocks", fmt.Sprint(j.Options.Duration))
 		logger.Command(startupLogEntry)
 		logger.Command("This can take longer depending on the pressure of the tasks being performed")
 	case Fuzzy:
@@ -248,9 +249,9 @@ func (j *JobOperation) Execute() error {
 		if block.WaitFor.Value() > 0 && i < len(j.Blocks) {
 			logger.Info("Waiting for %v before starting next block", fmt.Sprint(time.Duration(block.WaitFor.Value())*time.Millisecond))
 			time.Sleep(time.Duration(block.WaitFor.Value()) * time.Millisecond)
-			logger.Info("stopped waiting")
 		}
 	}
+
 	blockWaitingGroup.Wait()
 	endingTime := time.Now().UTC()
 	var duration time.Duration = endingTime.Sub(startingTime)
@@ -264,6 +265,9 @@ func (j *JobOperation) Execute() error {
 
 	j.Result.ProcessResult()
 	logger.Success("Finished Load Test on %v for %v seconds", j.Target.URL, fmt.Sprint(j.Options.Duration))
+	endingJobTime := time.Now().UTC()
+	j.Result.TimeTaken = endingJobTime.Sub(startingJobTime)
+	wg.Done()
 	return nil
 }
 
@@ -272,7 +276,7 @@ func (j *JobOperation) Authenticated() bool {
 	if j.Target == nil {
 		return false
 	}
-	if j.Target.JwtToken != "" {
+	if j.Target.JwtTokens != nil || len(j.Target.JwtTokens) > 0 {
 		return true
 	}
 	return false

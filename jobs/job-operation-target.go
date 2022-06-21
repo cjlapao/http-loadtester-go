@@ -6,7 +6,7 @@ type JobOperationTarget struct {
 	Method      TargetMethod
 	ContentType string
 	Body        string
-	JwtToken    string
+	JwtTokens   []string
 	logResponse bool
 }
 
