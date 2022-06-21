@@ -8,95 +8,10 @@ import (
 	"time"
 
 	"github.com/cjlapao/common-go/helper"
+	"github.com/cjlapao/http-loadtester-go/entities"
 
 	"gopkg.in/yaml.v2"
 )
-
-// LoadTest Entity
-type LoadTest struct {
-	DisplayName     string            `json:"displayName" yaml:"displayName"`
-	Jobs            []LoadTestJob     `json:"jobs" yaml:"jobs"`
-	Report          LoadTestJobOutput `json:"report" yaml:"report"`
-	WaitBetweenJobs int               `json:"waitBetweenJobs" yaml:"waitBetweenJobs"`
-	JobType         string            `json:"type" yaml:"type"`
-}
-
-// LoadTestJob Entity
-type LoadTestJob struct {
-	Name           string                 `json:"name" yaml:"name"`
-	Type           string                 `json:"type" yaml:"type"`
-	Target         LoadTestJobTarget      `json:"target" yaml:"target"`
-	ConstantLoad   *LoadTestConstantJob   `json:"constantLoad" yaml:"constantLoad"`
-	IncreasingLoad *LoadTestIncreasingJob `json:"increasingLoad" yaml:"increasingLoad"`
-	FuzzyLoad      *LoadTestFuzzyJob      `json:"fuzzyLoad" yaml:"fuzzyLoad"`
-}
-
-// LoadTestJobTarget Entity
-type LoadTestJobTarget struct {
-	URL          string   `json:"url" yaml:"url"`
-	Method       string   `json:"method" yaml:"method"`
-	Body         string   `json:"body" yaml:"body"`
-	BearerToken  string   `json:"token" yaml:"token"`
-	BearerTokens []string `json:"tokens" yaml:"tokens"`
-	ContentType  string   `json:"contentType" yaml:"contentType"`
-	Timeout      int      `json:"timeout" yaml:"timeout"`
-	LogResponse  bool     `json:"logResponse" yaml:"logResponse"`
-}
-
-// LoadTestConstantJob entity
-type LoadTestConstantJob struct {
-	Duration int                        `json:"duration" yaml:"duration"`
-	Options  LoadTestConstantJobOptions `json:"specs" yaml:"specs"`
-}
-
-// LoadTestConstantJobOptions Entity
-type LoadTestConstantJobOptions struct {
-	BlockType       string `json:"type" yaml:"type"`
-	BlockInterval   int    `json:"blockInterval" yaml:"blockInterval"`
-	MaxTaskInterval int    `json:"maxTaskInterval" yaml:"maxTaskInterval"`
-	MinTaskInterval int    `json:"minTaskInterval" yaml:"minTaskInterval"`
-	CallsPerBlock   int    `json:"callsPerBlock" yaml:"callsPerBlock"`
-}
-
-// LoadTestIncreasingJob Entity
-type LoadTestIncreasingJob struct {
-	Duration int                          `json:"duration" yaml:"duration"`
-	Options  LoadTestIncreasingJobOptions `json:"specs" yaml:"specs"`
-}
-
-// LoadTestIncreasingJobOptions Entity
-type LoadTestIncreasingJobOptions struct {
-	BlockType       string `json:"type" yaml:"type"`
-	BlockInterval   int    `json:"blockInterval" yaml:"blockInterval"`
-	TotalCalls      int    `json:"totalCalls" yaml:"totalCalls"`
-	MaxTaskInterval int    `json:"maxTaskInterval" yaml:"maxTaskInterval"`
-	MinTaskInterval int    `json:"minTaskInterval" yaml:"minTaskInterval"`
-}
-
-// LoadTestFuzzyJob Entity
-type LoadTestFuzzyJob struct {
-	Duration int                     `json:"duration" yaml:"duration"`
-	Options  LoadTestFuzzyJobOptions `json:"specs" yaml:"specs"`
-}
-
-// LoadTestFuzzyJobOptions Entity
-type LoadTestFuzzyJobOptions struct {
-	BlockType        string `json:"type" yaml:"type"`
-	MaxBlockInterval int    `json:"maxBlockInterval" yaml:"maxBlockInterval"`
-	MinBlockInterval int    `json:"minBlockInterval" yaml:"minBlockInterval"`
-	MaxTasksPerBlock int    `json:"maxTasksPerBlock" yaml:"maxTasksPerBlock"`
-	MinTasksPerBlock int    `json:"minTasksPerBlock" yaml:"minTasksPerBlock"`
-	MaxTaskInterval  int    `json:"maxTaskInterval" yaml:"maxTaskInterval"`
-	MinTaskInterval  int    `json:"minTaskInterval" yaml:"minTaskInterval"`
-}
-
-// LoadTestJobOutput Entity
-type LoadTestJobOutput struct {
-	MaxTaskOutput    int    `json:"maxTaskOutput" yaml:"maxTaskOutput"`
-	OutputResults    bool   `json:"outputResults" yaml:"outputResults"`
-	OutputToFile     bool   `json:"outputToFile" yaml:"outputToFile"`
-	OutputToFilePath string `json:"outputToFilePath" yaml:"outputToFilePath"`
-}
 
 // ExecuteFromFile Execute LoadTest from file
 func ExecuteFromFile(filepath string) error {
@@ -112,7 +27,7 @@ func ExecuteFromFile(filepath string) error {
 		return err
 	}
 
-	var loadTest LoadTest
+	var loadTest entities.LoadTest
 	err = yaml.Unmarshal(content, &loadTest)
 	if err != nil {
 		logger.Error(err.Error())
@@ -146,7 +61,7 @@ func ExecuteFromFile(filepath string) error {
 	return nil
 }
 
-func ExecuteLoadTest(loadTest LoadTest) ([]*JobOperation, error) {
+func ExecuteLoadTest(loadTest entities.LoadTest) ([]*JobOperation, error) {
 	if loadTest.DisplayName != "" {
 		logger.Success("Testing File %v ", loadTest.DisplayName)
 	}
@@ -195,9 +110,7 @@ func ExecuteLoadTest(loadTest LoadTest) ([]*JobOperation, error) {
 			job.Target.JwtTokens = append(job.Target.JwtTokens, loadTesterJob.Target.BearerToken)
 		}
 		if loadTesterJob.Target.BearerTokens != nil && len(loadTesterJob.Target.BearerTokens) > 0 {
-			for _, token := range loadTesterJob.Target.BearerTokens {
-				job.Target.JwtTokens = append(job.Target.JwtTokens, token)
-			}
+			job.Target.JwtTokens = append(job.Target.JwtTokens, loadTesterJob.Target.BearerTokens...)
 		}
 		if loadTesterJob.Target.Method != "" {
 			job.Target.Method = job.Target.Method.Get(loadTesterJob.Target.Method)

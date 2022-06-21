@@ -2,7 +2,6 @@ package jobs
 
 import (
 	"fmt"
-	"math/rand"
 	"sync"
 	"time"
 
@@ -58,6 +57,8 @@ type JobOperationResult struct {
 	AverageBlockDuration   float64
 	AverageCallDuration    float64
 	ResponseDetails        *ResponseDetails
+	StartingTime           time.Time
+	EndingTime             time.Time
 	TimeTaken              time.Duration
 	TaskResponseStatus     *[]*JobOperationTaskResponseStatusResult
 }
@@ -191,20 +192,14 @@ func (j *JobOperation) getRandomBlockInterval() int {
 	max := j.Options.MaxBlockInterval.Value()
 	min := j.Options.MinBlockInterval.Value()
 
-	randomBlockNumber := callRandom.Intn(max-min) + min
-
-	return randomBlockNumber
+	return GetRandomNum(min, max)
 }
 
 func (j *JobOperation) getRandomTaskCount() int {
 	max := j.Options.MaxTasksPerBlock.Value()
 	min := j.Options.MinTasksPerBlock.value
-	rand.Seed(time.Now().UnixNano())
-	someSalt := int64(rand.Intn(10000))
-	rand.Seed(time.Now().UnixNano() * someSalt)
-	randomTasksNumber := rand.Intn(max-min) + min
 
-	return randomTasksNumber
+	return GetRandomNum(min, max)
 }
 
 // Execute Executes a Job Operation creating X amount of blocks that will be run every X seconds

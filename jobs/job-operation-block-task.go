@@ -155,8 +155,8 @@ func (t *JobOperationBlockTask) Execute(wg *sync.WaitGroup) {
 				t.Result.StatusCode = response.StatusCode
 				t.Result.Status = response.Status
 			} else {
-				t.Result.StatusCode = 999
-				t.Result.Status = "xxx Empty Response"
+				t.Result.StatusCode = 0
+				t.Result.Status = "0 Empty Response"
 			}
 			t.Result.ErrorMessage = errorString
 		}
