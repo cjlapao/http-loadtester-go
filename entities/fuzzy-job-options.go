@@ -2,6 +2,7 @@ package entities
 
 // FuzzyJobOptions Entity
 type FuzzyJobOptions struct {
+	NumberOfBlocks   int    `json:"numberOfBlocks" yaml:"numberOfBlocks"`
 	BlockType        string `json:"type" yaml:"type"`
 	MaxBlockInterval int    `json:"maxBlockInterval" yaml:"maxBlockInterval"`
 	MinBlockInterval int    `json:"minBlockInterval" yaml:"minBlockInterval"`

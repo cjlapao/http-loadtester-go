@@ -63,7 +63,11 @@ func (j *JobOperation) ExportOutputToFile(path string) {
 func (j *JobOperation) MarkDown() string {
 	md := markdown.CreateDocument()
 	header := md.CreateHeader()
-	header.H1(fmt.Sprintf("HTTP Load Tester Report for %v", j.Target.URL))
+	if j.Target.IsMultiTargeted() {
+		header.H1(fmt.Sprintf("HTTP Load Tester Report for %v targets", j.Target.CountUrls()))
+	} else {
+		header.H1(fmt.Sprintf("HTTP Load Tester Report for %v", j.Target.GetUrl(0)))
+	}
 
 	htb := md.CreateTextBlock()
 	htb.AddLine(fmt.Sprintf("Job Type: %v", j.Type))
@@ -76,6 +80,9 @@ func (j *JobOperation) MarkDown() string {
 	} else {
 		htb.AddLine("Contains Body: No")
 	}
+	htb.AddLine(fmt.Sprintf("Started: %v", j.Result.StartingTime.Format(time.RFC3339)))
+	htb.AddLine(fmt.Sprintf("Finished: %v", j.Result.EndingTime.Format(time.RFC3339)))
+
 	htb.AddLine(fmt.Sprintf("Duration: %.2f seconds", j.Result.TotalDurationInSeconds))
 	htb.AddLine(fmt.Sprintf("Total Calls: %v, Succeeded: %v, Failed: %v", j.Result.TotalCalls, j.Result.TotalSucceededCalls, j.Result.TotalFailedCalls))
 	if j.Result.TotalFailedCalls > 0 {
@@ -91,6 +98,11 @@ func (j *JobOperation) MarkDown() string {
 	statusDetailsHeader := md.CreateHeader()
 	statusDetailsHeader.H2("Status Results Details")
 	j.generateTaskTable(md)
+	if j.Target.IsMultiTargeted() {
+		multiTargetDetails := md.CreateHeader()
+		multiTargetDetails.H2("Targets")
+		j.generateMultiTargetTable(md)
+	}
 	blockDetailsHeader := md.CreateHeader()
 	blockDetailsHeader.H2("Block Results Details")
 	j.generateBlockTable(md)
@@ -132,6 +144,20 @@ func (j *JobOperation) generateBlockTable(document *markdown.Document) *markdown
 			fmt.Sprint(block.Succeeded),
 			fmt.Sprintf("%.3f seconds", block.TotalDurationInSeconds),
 			fmt.Sprintf("%.3f seconds", block.AverageTaskDuration),
+		)
+	}
+
+	return table
+}
+
+func (j *JobOperation) generateMultiTargetTable(document *markdown.Document) *markdown.Table {
+	table := document.CreateTable()
+	table.AddHeaderColumn("Uri")
+	table.AddAlignedHeaderColumn("Number of calls", markdown.AlignRight)
+	for key, value := range j.Result.TargetCalls {
+		table.AddRow(
+			fmt.Sprint(key),
+			fmt.Sprint(value),
 		)
 	}
 

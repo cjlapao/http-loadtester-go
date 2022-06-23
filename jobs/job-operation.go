@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cjlapao/http-loadtester-go/common"
 	"github.com/rs/xid"
 )
 
@@ -23,44 +24,6 @@ type JobOperation struct {
 	Options       *JobOperationOptions
 	Result        *JobOperationResult
 	Blocks        []*JobOperationBlock
-}
-
-// JobOperationOptions Entity
-type JobOperationOptions struct {
-	Duration         int
-	MaxTaskOutput    int
-	Timeout          int
-	Verbose          bool
-	LogResult        bool
-	BlockType        BlockType
-	BlockInterval    Interval
-	TasksPerBlock    Interval
-	MaxBlockInterval Interval
-	MinBlockInterval Interval
-	MaxTaskInterval  Interval
-	MinTaskInterval  Interval
-	MaxTasksPerBlock Interval
-	MinTasksPerBlock Interval
-}
-
-// JobOperationResult Entity
-type JobOperationResult struct {
-	ID                     string
-	Target                 *JobOperationTarget
-	BlockResults           *[]*JobOperationBlockResult
-	MaxTaskOutput          int
-	Total                  int
-	TotalCalls             int
-	TotalSucceededCalls    int
-	TotalFailedCalls       int
-	TotalDurationInSeconds float64
-	AverageBlockDuration   float64
-	AverageCallDuration    float64
-	ResponseDetails        *ResponseDetails
-	StartingTime           time.Time
-	EndingTime             time.Time
-	TimeTaken              time.Duration
-	TaskResponseStatus     *[]*JobOperationTaskResponseStatusResult
 }
 
 // CreateJobOperation Creates a new Job Operation Task
@@ -83,6 +46,7 @@ func CreateJobOperation() *JobOperation {
 			TasksPerBlock:    NewInterval(60),
 		},
 	}
+
 	job.Name = &job.ID
 	job.CreateTarget()
 	job.CreateLoadJobResult()
@@ -103,13 +67,17 @@ func (j *JobOperation) CreateLoadJobResult() *JobOperationResult {
 }
 
 func (j *JobOperation) generateBlocks() {
-	numberOfBlocks := 0
+	numberOfBlocks := j.Options.NumberOfBlocks
+
+	if numberOfBlocks <= 0 {
+		numberOfBlocks = 1
+	}
+
 	switch j.Type {
 	case Constant, Increasing:
 		if j.Options.BlockInterval.Value() <= 0 {
 			j.Options.BlockInterval = NewInterval(0)
 		}
-		numberOfBlocks = j.Options.Duration
 		if numberOfBlocks > 0 {
 			for i := 0; i < numberOfBlocks; i++ {
 				block := j.CreateBlock()
@@ -124,7 +92,6 @@ func (j *JobOperation) generateBlocks() {
 			j.Options.MaxBlockInterval = NewInterval(1)
 			j.Options.MinBlockInterval = NewInterval(1)
 		}
-		numberOfBlocks = j.Options.Duration
 		if numberOfBlocks > 0 {
 			for i := 0; i < numberOfBlocks; i++ {
 				block := j.CreateBlock()
@@ -192,14 +159,14 @@ func (j *JobOperation) getRandomBlockInterval() int {
 	max := j.Options.MaxBlockInterval.Value()
 	min := j.Options.MinBlockInterval.Value()
 
-	return GetRandomNum(min, max)
+	return common.GetRandomNum(min, max)
 }
 
 func (j *JobOperation) getRandomTaskCount() int {
 	max := j.Options.MaxTasksPerBlock.Value()
 	min := j.Options.MinTasksPerBlock.value
 
-	return GetRandomNum(min, max)
+	return common.GetRandomNum(min, max)
 }
 
 // Execute Executes a Job Operation creating X amount of blocks that will be run every X seconds
@@ -211,19 +178,10 @@ func (j *JobOperation) Execute(wg *sync.WaitGroup) error {
 	j.Result = j.CreateLoadJobResult()
 	var blockWaitingGroup sync.WaitGroup
 	blockWaitingGroup.Add(amountOfBlocks)
-	startupLogEntry := fmt.Sprintf("Performing a Load Test on %v", j.Target.URL)
-	switch j.Type {
-	case Constant:
-		startupLogEntry += fmt.Sprintf("%v blocks", fmt.Sprint(j.Options.Duration))
-		logger.Command(startupLogEntry)
-		logger.Command("This can take longer depending on the pressure of the tasks being performed")
-	case Increasing:
-		startupLogEntry += fmt.Sprintf("%v blocks", fmt.Sprint(j.Options.Duration))
-		logger.Command(startupLogEntry)
-		logger.Command("This can take longer depending on the pressure of the tasks being performed")
-	case Fuzzy:
-		startupLogEntry += fmt.Sprintf("%v blocks", fmt.Sprint(j.Options.Duration))
-		logger.Command(startupLogEntry)
+	if j.Target.IsMultiTargeted() {
+		logger.Success("Performing Load Test on %v targets with %v blocks", fmt.Sprintf("%v", j.Target.CountUrls()), fmt.Sprint(j.Options.NumberOfBlocks))
+	} else {
+		logger.Success("Performing Load Test on %v with %v blocks", j.Target.GetUrl(0), fmt.Sprint(j.Options.NumberOfBlocks))
 	}
 
 	startingTime := time.Now().UTC()
@@ -259,9 +217,16 @@ func (j *JobOperation) Execute(wg *sync.WaitGroup) error {
 	}
 
 	j.Result.ProcessResult()
-	logger.Success("Finished Load Test on %v for %v seconds", j.Target.URL, fmt.Sprint(j.Options.Duration))
+	if j.Target.IsMultiTargeted() {
+		logger.Success("Finished Load Test on %v targets for %v seconds", fmt.Sprintf("%v", j.Target.CountUrls()), fmt.Sprint(j.Options.Duration))
+
+	} else {
+		logger.Success("Finished Load Test on %v for %v seconds", j.Target.GetUrl(0), fmt.Sprint(j.Options.Duration))
+	}
 	endingJobTime := time.Now().UTC()
 	j.Result.TimeTaken = endingJobTime.Sub(startingJobTime)
+	j.Result.StartingTime = startingJobTime
+	j.Result.EndingTime = endingJobTime
 	wg.Done()
 	return nil
 }
@@ -275,51 +240,4 @@ func (j *JobOperation) Authenticated() bool {
 		return true
 	}
 	return false
-}
-
-// ProcessResult Processes the results and calculates the averages
-func (j *JobOperationResult) ProcessResult() {
-	totalDurationForAverage := 0.0
-	totalTasksDurationForAverage := 0.0
-	responseStatusResult := make([]*JobOperationTaskResponseStatusResult, 0)
-	if j.BlockResults != nil {
-		for _, blockResult := range *j.BlockResults {
-			j.Total++
-			j.TotalCalls += blockResult.Total
-			j.TotalSucceededCalls += blockResult.Succeeded
-			j.TotalFailedCalls += blockResult.Failed
-			totalDurationForAverage += blockResult.TotalDurationInSeconds
-
-			for _, status := range *blockResult.TaskResponseStatus {
-				exists := false
-				for _, jobStatus := range responseStatusResult {
-					if status.Code == jobStatus.Code {
-						jobStatus.Count = jobStatus.Count + status.Count
-						exists = true
-					}
-				}
-
-				if !exists {
-					newStatusCode := JobOperationTaskResponseStatusResult{
-						Code:  status.Code,
-						Count: status.Count,
-					}
-
-					responseStatusResult = append(responseStatusResult, &newStatusCode)
-				}
-			}
-
-			for _, taskResult := range *blockResult.TaskResults {
-				totalTasksDurationForAverage += taskResult.QueryDuration.Seconds
-				if j.ResponseDetails == nil && blockResult.ResponseDetails != nil {
-					j.ResponseDetails = blockResult.ResponseDetails
-				}
-			}
-
-		}
-
-		j.TaskResponseStatus = &responseStatusResult
-		j.AverageBlockDuration = totalDurationForAverage / float64(j.Total)
-		j.AverageCallDuration = totalTasksDurationForAverage / float64(j.TotalCalls)
-	}
 }

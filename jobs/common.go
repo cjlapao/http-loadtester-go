@@ -1,13 +1,8 @@
 package jobs
 
 import (
-	"crypto/rand"
-	"math/big"
-
-	"github.com/cjlapao/common-go/log"
+	"github.com/cjlapao/http-loadtester-go/common"
 )
-
-var logger = log.Get()
 
 // Interval Entity
 type Interval struct {
@@ -37,17 +32,5 @@ func GetRandomBlockInterval(maxInterval Interval, minInterval Interval) int {
 	max := maxInterval.Value()
 	min := minInterval.Value()
 
-	return GetRandomNum(min, max)
-}
-
-func GetRandomNum(min, max int) int {
-	bg := big.NewInt(int64(max) - int64(min))
-
-	n, err := rand.Int(rand.Reader, bg)
-
-	if err != nil {
-		return 0
-	}
-
-	return int(n.Int64() + int64(min))
+	return common.GetRandomNum(min, max)
 }

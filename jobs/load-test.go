@@ -68,7 +68,7 @@ func ExecuteLoadTest(loadTest entities.LoadTest) ([]*JobOperation, error) {
 	loadTesterJobs := make([]*JobOperation, 0)
 
 	for _, loadTesterJob := range loadTest.Jobs {
-		if loadTesterJob.Target.URL == "" {
+		if loadTesterJob.Target.URL == "" && (loadTesterJob.Target.URLs == nil || len(loadTesterJob.Target.URLs) == 0) {
 			err := errors.New("Url was not defined")
 			logger.Error(err.Error())
 			return loadTesterJobs, err
@@ -106,18 +106,42 @@ func ExecuteLoadTest(loadTest entities.LoadTest) ([]*JobOperation, error) {
 		if loadTesterJob.Target.ContentType != "" {
 			job.Target.ContentType = loadTesterJob.Target.ContentType
 		}
+
+		// Bearer Tokens
 		if loadTesterJob.Target.BearerToken != "" {
 			job.Target.JwtTokens = append(job.Target.JwtTokens, loadTesterJob.Target.BearerToken)
 		}
 		if loadTesterJob.Target.BearerTokens != nil && len(loadTesterJob.Target.BearerTokens) > 0 {
 			job.Target.JwtTokens = append(job.Target.JwtTokens, loadTesterJob.Target.BearerTokens...)
 		}
+
+		// Method
 		if loadTesterJob.Target.Method != "" {
 			job.Target.Method = job.Target.Method.Get(loadTesterJob.Target.Method)
 		}
+
+		// Single targeted url
 		if loadTesterJob.Target.URL != "" {
-			job.Target.URL = loadTesterJob.Target.URL
+			job.Target.URLs = append(job.Target.URLs, loadTesterJob.Target.URL)
 		}
+
+		// Single targeted url
+		if loadTesterJob.Target.URLs != nil && len(loadTesterJob.Target.URLs) > 0 {
+			job.Target.URLs = append(job.Target.URLs, loadTesterJob.Target.URLs...)
+		}
+
+		// UserAgent
+		if loadTesterJob.Target.UserAgent != "" {
+			job.Target.UserAgent = loadTesterJob.Target.UserAgent
+		}
+
+		// Headers
+		if loadTesterJob.Target.Headers != nil && len(loadTesterJob.Target.Headers) > 0 {
+			for key, value := range loadTesterJob.Target.Headers {
+				job.Target.Headers[key] = value
+			}
+		}
+
 		if loadTesterJob.Target.Timeout > 0 {
 			job.Options.Timeout = loadTesterJob.Target.Timeout
 		}
@@ -139,6 +163,9 @@ func ExecuteLoadTest(loadTest entities.LoadTest) ([]*JobOperation, error) {
 
 			if loadTesterJob.ConstantLoad.Duration > 0 {
 				job.Options.Duration = loadTesterJob.ConstantLoad.Duration
+			}
+			if loadTesterJob.ConstantLoad.Options.NumberOfBlocks > 0 {
+				job.Options.NumberOfBlocks = loadTesterJob.ConstantLoad.Options.NumberOfBlocks
 			}
 			if loadTesterJob.ConstantLoad.Options.BlockInterval > 0 {
 				job.Options.BlockInterval = NewInterval(loadTesterJob.ConstantLoad.Options.BlockInterval)
@@ -170,6 +197,9 @@ func ExecuteLoadTest(loadTest entities.LoadTest) ([]*JobOperation, error) {
 			if loadTesterJob.IncreasingLoad.Duration > 0 {
 				job.Options.Duration = loadTesterJob.IncreasingLoad.Duration
 			}
+			if loadTesterJob.IncreasingLoad.Options.NumberOfBlocks > 0 {
+				job.Options.NumberOfBlocks = loadTesterJob.IncreasingLoad.Options.NumberOfBlocks
+			}
 			if loadTesterJob.IncreasingLoad.Options.BlockInterval > 0 {
 				job.Options.BlockInterval = NewInterval(loadTesterJob.IncreasingLoad.Options.BlockInterval)
 			}
@@ -199,6 +229,9 @@ func ExecuteLoadTest(loadTest entities.LoadTest) ([]*JobOperation, error) {
 
 			if loadTesterJob.FuzzyLoad.Duration > 0 {
 				job.Options.Duration = loadTesterJob.FuzzyLoad.Duration
+			}
+			if loadTesterJob.FuzzyLoad.Options.NumberOfBlocks > 0 {
+				job.Options.NumberOfBlocks = loadTesterJob.FuzzyLoad.Options.NumberOfBlocks
 			}
 			if loadTesterJob.FuzzyLoad.Options.MaxBlockInterval > 0 {
 				job.Options.MaxBlockInterval = NewInterval(loadTesterJob.FuzzyLoad.Options.MaxBlockInterval)

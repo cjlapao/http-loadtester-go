@@ -75,7 +75,9 @@ func (t *JobOperationBlockTask) CreateResult() *JobOperationBlockTaskResult {
 
 // Execute Executes a Sync Block Task
 func (t *JobOperationBlockTask) Execute(wg *sync.WaitGroup) {
-	if t.Target.URL == "" {
+	taskTarget := t.Target.GetRandomUrl()
+
+	if taskTarget == "" {
 		wg.Done()
 		return
 	}
@@ -88,7 +90,7 @@ func (t *JobOperationBlockTask) Execute(wg *sync.WaitGroup) {
 	}
 
 	if t.Verbose {
-		logger.Info("[%v] Started call %v to %v", *t.JobName, fmt.Sprint(t.ID), t.Target.URL)
+		logger.Info("[%v] Started call %v to %v", *t.JobName, fmt.Sprint(t.ID), taskTarget)
 	}
 
 	// Implementing defined minutes timeout
@@ -106,9 +108,9 @@ func (t *JobOperationBlockTask) Execute(wg *sync.WaitGroup) {
 	startingTime := time.Now().UTC()
 
 	if t.Target.Body != "" {
-		request, err = http.NewRequest(t.Target.Method.String(), t.Target.URL, bytes.NewReader([]byte(t.Target.Body)))
+		request, err = http.NewRequest(t.Target.Method.String(), taskTarget, bytes.NewReader([]byte(t.Target.Body)))
 	} else {
-		request, err = http.NewRequest(t.Target.Method.String(), t.Target.URL, nil)
+		request, err = http.NewRequest(t.Target.Method.String(), taskTarget, nil)
 	}
 
 	if err != nil {
@@ -120,16 +122,30 @@ func (t *JobOperationBlockTask) Execute(wg *sync.WaitGroup) {
 	}
 
 	if request != nil {
-		if t.Target.JwtTokens != nil || len(t.Target.JwtTokens) > 0 {
+		if t.Target.HasJwtAuthentication() {
 			token := t.getRandomJwtToken()
 			request.Header.Set("Authorization", "Bearer "+token)
+		} else if t.Target.HasBasicAuthentication() {
+			auth := t.Target.GetRandomBasicAuthentication()
+			request.Header.Set("Authorization", "Basic "+auth)
 		}
+		if t.Target.HasHeaders() {
+			for key, value := range t.Target.Headers {
+				request.Header.Set(key, value)
+			}
+		}
+
 		if t.Target.ContentType != "" {
 			request.Header.Set("Content-Type", t.Target.ContentType)
 		}
+
+		request.Header.Set("User-Agent", t.Target.UserAgent)
 	}
+
 	response, err = client.Do(request.WithContext(ctx))
 	endingTime := time.Now().UTC()
+
+	t.Result.TargetedUri = taskTarget
 
 	if err != nil {
 		if t.Verbose {
@@ -167,7 +183,7 @@ func (t *JobOperationBlockTask) Execute(wg *sync.WaitGroup) {
 
 	var duration time.Duration = endingTime.Sub(startingTime)
 	if t.Verbose {
-		logger.Info("[%v] Ended call %v to %v, took %v", *t.JobName, fmt.Sprint(t.ID), t.Target.URL, fmt.Sprint(duration.Seconds()))
+		logger.Info("[%v] Ended call %v to %v, took %v", *t.JobName, fmt.Sprint(t.ID), taskTarget, fmt.Sprint(duration.Seconds()))
 	}
 
 	queryDuration := JobOperationBlockTaskDuration{
@@ -246,25 +262,4 @@ func (j *JobOperationBlockTask) getRandomJwtToken() string {
 	}
 
 	return j.Target.JwtTokens[nBig.Int64()]
-}
-
-// JobOperationBlockTaskResult Entity
-type JobOperationBlockTaskResult struct {
-	TaskID          int
-	BlockID         string
-	JobID           string
-	Target          *JobOperationTarget
-	QueryDuration   *JobOperationBlockTaskDuration
-	Status          string
-	StatusCode      int
-	Content         string
-	ErrorMessage    string
-	ResponseDetails *ResponseDetails
-}
-
-// JobOperationBlockTaskDuration Entity
-type JobOperationBlockTaskDuration struct {
-	Duration     time.Duration
-	Milliseconds int64
-	Seconds      float64
 }
