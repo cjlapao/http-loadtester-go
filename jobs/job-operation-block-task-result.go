@@ -6,7 +6,7 @@ type JobOperationBlockTaskResult struct {
 	BlockID            string
 	JobID              string
 	TargetedUri        string
-	UsedAuthentication string
+	AuthenticationUsed string
 	Target             *JobOperationTarget
 	QueryDuration      *JobOperationBlockTaskDuration
 	Status             string

@@ -125,9 +125,11 @@ func (t *JobOperationBlockTask) Execute(wg *sync.WaitGroup) {
 		if t.Target.HasJwtAuthentication() {
 			token := t.getRandomJwtToken()
 			request.Header.Set("Authorization", "Bearer "+token)
+			t.Result.AuthenticationUsed = request.Header["Authorization"][0]
 		} else if t.Target.HasBasicAuthentication() {
 			auth := t.Target.GetRandomBasicAuthentication()
 			request.Header.Set("Authorization", "Basic "+auth)
+			t.Result.AuthenticationUsed = request.Header["Authorization"][0]
 		}
 		if t.Target.HasHeaders() {
 			for key, value := range t.Target.Headers {

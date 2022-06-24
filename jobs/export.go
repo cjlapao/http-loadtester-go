@@ -103,6 +103,13 @@ func (j *JobOperation) MarkDown() string {
 		multiTargetDetails.H2("Targets")
 		j.generateMultiTargetTable(md)
 	}
+
+	if j.Target.IsMultiAuthentication() {
+		multiTargetAuthenticationDetails := md.CreateHeader()
+		multiTargetAuthenticationDetails.H2("Used Targets Authentication")
+		j.generateMultiTargetedAuthenticationsTable(md)
+	}
+
 	blockDetailsHeader := md.CreateHeader()
 	blockDetailsHeader.H2("Block Results Details")
 	j.generateBlockTable(md)
@@ -159,6 +166,24 @@ func (j *JobOperation) generateMultiTargetTable(document *markdown.Document) *ma
 			fmt.Sprint(key),
 			fmt.Sprint(value),
 		)
+	}
+
+	return table
+}
+
+func (j *JobOperation) generateMultiTargetedAuthenticationsTable(document *markdown.Document) *markdown.Table {
+	table := document.CreateTable()
+	table.AddHeaderColumn("Uri")
+	table.AddAlignedHeaderColumn("Authentication", markdown.AlignRight)
+	table.AddAlignedHeaderColumn("Number of calls", markdown.AlignRight)
+	for key, value := range j.Result.TargetAuthenticationUsed {
+		for token, n := range value {
+			table.AddRow(
+				fmt.Sprint(key),
+				fmt.Sprint(token),
+				fmt.Sprint(n),
+			)
+		}
 	}
 
 	return table

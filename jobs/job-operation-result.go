@@ -4,23 +4,24 @@ import "time"
 
 // JobOperationResult Entity
 type JobOperationResult struct {
-	ID                     string
-	Target                 *JobOperationTarget
-	BlockResults           *[]*JobOperationBlockResult
-	TargetCalls            map[string]int
-	MaxTaskOutput          int
-	Total                  int
-	TotalCalls             int
-	TotalSucceededCalls    int
-	TotalFailedCalls       int
-	TotalDurationInSeconds float64
-	AverageBlockDuration   float64
-	AverageCallDuration    float64
-	ResponseDetails        *ResponseDetails
-	StartingTime           time.Time
-	EndingTime             time.Time
-	TimeTaken              time.Duration
-	TaskResponseStatus     *[]*JobOperationTaskResponseStatusResult
+	ID                       string
+	Target                   *JobOperationTarget
+	BlockResults             *[]*JobOperationBlockResult
+	TargetCalls              map[string]int
+	TargetAuthenticationUsed map[string]map[string]int
+	MaxTaskOutput            int
+	Total                    int
+	TotalCalls               int
+	TotalSucceededCalls      int
+	TotalFailedCalls         int
+	TotalDurationInSeconds   float64
+	AverageBlockDuration     float64
+	AverageCallDuration      float64
+	ResponseDetails          *ResponseDetails
+	StartingTime             time.Time
+	EndingTime               time.Time
+	TimeTaken                time.Duration
+	TaskResponseStatus       *[]*JobOperationTaskResponseStatusResult
 }
 
 // ProcessResult Processes the results and calculates the averages
@@ -28,6 +29,7 @@ func (j *JobOperationResult) ProcessResult() {
 	totalDurationForAverage := 0.0
 	totalTasksDurationForAverage := 0.0
 	j.TargetCalls = make(map[string]int)
+	j.TargetAuthenticationUsed = make(map[string]map[string]int)
 	responseStatusResult := make([]*JobOperationTaskResponseStatusResult, 0)
 	if j.BlockResults != nil {
 		for _, blockResult := range *j.BlockResults {
@@ -42,6 +44,21 @@ func (j *JobOperationResult) ProcessResult() {
 					j.TargetCalls[key] = blockVal + val
 				} else {
 					j.TargetCalls[key] = blockVal
+				}
+			}
+
+			// recording the usage of the authentication
+			for key, blockVal := range blockResult.TargetAuthenticationUsed {
+				if _, ok := j.TargetAuthenticationUsed[key]; ok {
+					for blockTargetKey, blockTargetVal := range blockVal {
+						if _, ok := j.TargetAuthenticationUsed[key][blockTargetKey]; ok {
+							j.TargetAuthenticationUsed[key][blockTargetKey] = j.TargetAuthenticationUsed[key][blockTargetKey] + blockTargetVal
+						} else {
+							j.TargetAuthenticationUsed[key][blockTargetKey] = blockTargetVal
+						}
+					}
+				} else {
+					j.TargetAuthenticationUsed[key] = blockVal
 				}
 			}
 

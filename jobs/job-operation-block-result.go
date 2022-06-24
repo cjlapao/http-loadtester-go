@@ -2,17 +2,18 @@ package jobs
 
 // JobOperationBlockResult Entity
 type JobOperationBlockResult struct {
-	JobID                  string
-	BlockID                string
-	TaskResults            *[]*JobOperationBlockTaskResult
-	TargetCalls            map[string]int
-	Total                  int
-	Failed                 int
-	Succeeded              int
-	TaskResponseStatus     *[]*JobOperationTaskResponseStatusResult
-	TotalDurationInSeconds float64
-	AverageTaskDuration    float64
-	ResponseDetails        *ResponseDetails
+	JobID                    string
+	BlockID                  string
+	TaskResults              *[]*JobOperationBlockTaskResult
+	TargetCalls              map[string]int
+	TargetAuthenticationUsed map[string]map[string]int
+	Total                    int
+	Failed                   int
+	Succeeded                int
+	TaskResponseStatus       *[]*JobOperationTaskResponseStatusResult
+	TotalDurationInSeconds   float64
+	AverageTaskDuration      float64
+	ResponseDetails          *ResponseDetails
 }
 
 // Process Processes a JobOperationBlockResult updating the job
@@ -20,6 +21,7 @@ func (r *JobOperationBlockResult) Process() {
 	totalDurationForAverage := 0.0
 	responseStatusResult := make([]*JobOperationTaskResponseStatusResult, 0)
 	r.TargetCalls = make(map[string]int)
+	r.TargetAuthenticationUsed = make(map[string]map[string]int)
 	if r.TaskResults != nil {
 		for _, callResult := range *r.TaskResults {
 			r.Total++
@@ -27,6 +29,23 @@ func (r *JobOperationBlockResult) Process() {
 				r.TargetCalls[callResult.TargetedUri] = val + 1
 			} else {
 				r.TargetCalls[callResult.TargetedUri] = 1
+			}
+
+			// recording the usage of the authentication
+			if val, ok := r.TargetAuthenticationUsed[callResult.TargetedUri]; ok {
+				if tokenVal, ok := val[callResult.AuthenticationUsed]; ok {
+					r.TargetAuthenticationUsed[callResult.TargetedUri][callResult.AuthenticationUsed] = tokenVal + 1
+				} else {
+					if r.TargetAuthenticationUsed[callResult.TargetedUri] == nil {
+						r.TargetAuthenticationUsed[callResult.TargetedUri] = make(map[string]int)
+					}
+					r.TargetAuthenticationUsed[callResult.TargetedUri][callResult.AuthenticationUsed] = 1
+				}
+			} else {
+				if r.TargetAuthenticationUsed[callResult.TargetedUri] == nil {
+					r.TargetAuthenticationUsed[callResult.TargetedUri] = make(map[string]int)
+				}
+				r.TargetAuthenticationUsed[callResult.TargetedUri][callResult.AuthenticationUsed] = 1
 			}
 
 			if callResult.StatusCode >= 200 && callResult.StatusCode <= 299 {

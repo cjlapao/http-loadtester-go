@@ -43,6 +43,14 @@ func (j *JobOperationTarget) IsMultiTargeted() bool {
 	return false
 }
 
+func (j *JobOperationTarget) IsMultiAuthentication() bool {
+	if (j.JwtTokens != nil && len(j.JwtTokens) > 1) || (j.BasicAuthentications != nil && len(j.BasicAuthentications) > 1) {
+		return true
+	}
+
+	return false
+}
+
 func (j *JobOperationTarget) GetUrl(index int) string {
 	if len(j.URLs) < index {
 		return ""
