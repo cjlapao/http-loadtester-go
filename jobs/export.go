@@ -6,6 +6,9 @@ import (
 	"strings"
 	"time"
 
+	b64 "encoding/base64"
+	"encoding/json"
+
 	"github.com/cjlapao/common-go/helper"
 
 	"github.com/cjlapao/markdown-go"
@@ -178,9 +181,47 @@ func (j *JobOperation) generateMultiTargetedAuthenticationsTable(document *markd
 	table.AddAlignedHeaderColumn("Number of calls", markdown.AlignRight)
 	for key, value := range j.Result.TargetAuthenticationUsed {
 		for token, n := range value {
+			decodedToken := ""
+			tokenParts := strings.Split(token, " ")
+			if len(tokenParts) == 2 {
+				if tokenParts[0] == "Basic" {
+					decodedBytes, err := b64.StdEncoding.DecodeString(tokenParts[1])
+					if err != nil {
+						decodedToken = token
+					}
+					decodedToken = string(decodedBytes)
+				}
+				if tokenParts[0] == "Bearer" {
+					jwtParts := strings.Split(tokenParts[1], ".")
+					if len(jwtParts) == 3 {
+						decodedBytes, err := b64.StdEncoding.DecodeString(jwtParts[1])
+						if err != nil {
+							decodedToken = token
+						}
+						jwtMap := make(map[string]string)
+
+						err = json.Unmarshal(decodedBytes, &jwtMap)
+						if err != nil {
+							decodedToken = token
+						}
+
+						if val, ok := jwtMap["tid"]; ok {
+							decodedToken = val
+						} else if val, ok := jwtMap["aud"]; ok {
+							decodedToken = val
+						} else if val, ok := jwtMap["iss"]; ok {
+							decodedToken = val
+						} else {
+							decodedToken = token
+						}
+					} else {
+						decodedToken = token
+					}
+				}
+			}
 			table.AddRow(
 				fmt.Sprint(key),
-				fmt.Sprint(token),
+				fmt.Sprint(decodedToken),
 				fmt.Sprint(n),
 			)
 		}

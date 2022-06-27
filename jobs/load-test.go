@@ -68,6 +68,10 @@ func ExecuteLoadTest(loadTest entities.LoadTest) ([]*JobOperation, error) {
 	loadTesterJobs := make([]*JobOperation, 0)
 
 	for _, loadTesterJob := range loadTest.Jobs {
+		if loadTesterJob.Disabled {
+			continue
+		}
+
 		if loadTesterJob.Target.URL == "" && (loadTesterJob.Target.URLs == nil || len(loadTesterJob.Target.URLs) == 0) {
 			err := errors.New("Url was not defined")
 			logger.Error(err.Error())
@@ -261,7 +265,7 @@ func ExecuteLoadTest(loadTest entities.LoadTest) ([]*JobOperation, error) {
 	logger.Success("Created successfully %v job instructions to execute", fmt.Sprintf("%v", len(loadTesterJobs)))
 
 	var loadTestJobsWaitGroup sync.WaitGroup
-	loadTestJobsWaitGroup.Add(len(loadTest.Jobs))
+	loadTestJobsWaitGroup.Add(len(loadTesterJobs))
 
 	for i, jobToExecute := range loadTesterJobs {
 		switch strings.ToLower(loadTest.JobType) {
@@ -276,7 +280,7 @@ func ExecuteLoadTest(loadTest entities.LoadTest) ([]*JobOperation, error) {
 			jobToExecute.Execute(&loadTestJobsWaitGroup)
 		}
 
-		if i < len(loadTest.Jobs)-1 {
+		if i < len(loadTesterJobs)-1 {
 			if loadTest.WaitBetweenJobs > 0 {
 				logger.Info("Waiting for %v Millisecond for the next job...", fmt.Sprint(loadTest.WaitBetweenJobs))
 				time.Sleep(time.Duration(loadTest.WaitBetweenJobs) * time.Millisecond)
