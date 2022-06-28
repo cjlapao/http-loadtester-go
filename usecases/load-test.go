@@ -1,4 +1,4 @@
-package jobs
+package usecases
 
 import (
 	"errors"
@@ -8,7 +8,9 @@ import (
 	"time"
 
 	"github.com/cjlapao/common-go/helper"
+	"github.com/cjlapao/http-loadtester-go/domain"
 	"github.com/cjlapao/http-loadtester-go/entities"
+	"github.com/cjlapao/http-loadtester-go/infrastructure"
 
 	"gopkg.in/yaml.v2"
 )
@@ -17,20 +19,20 @@ import (
 func ExecuteFromFile(filepath string) error {
 	if !helper.FileExists(filepath) {
 		err := errors.New("file not found")
-		logger.Error(err.Error())
+		sp.Logger().Error(err.Error())
 		return err
 	}
 
 	content, err := helper.ReadFromFile(filepath)
 	if err != nil {
-		logger.Error(err.Error())
+		sp.Logger().Error(err.Error())
 		return err
 	}
 
 	var loadTest entities.LoadTest
 	err = yaml.Unmarshal(content, &loadTest)
 	if err != nil {
-		logger.Error(err.Error())
+		sp.Logger().Error(err.Error())
 		return err
 	}
 
@@ -42,30 +44,30 @@ func ExecuteFromFile(filepath string) error {
 	if loadTest.Report.OutputToFile {
 		for _, job := range jobs {
 			job.ExportReportToFile(loadTest.Report.OutputToFilePath)
-			logger.Success("Finished creating reports for job %v", *job.Name)
+			sp.Logger().Success("Finished creating reports for job %v", *job.Name)
 		}
 	} else {
 		for _, job := range jobs {
 			fmt.Println(job.MarkDown())
-			logger.Success("Finished creating reports for job %v", *job.Name)
+			sp.Logger().Success("Finished creating reports for job %v", *job.Name)
 		}
 	}
 	if loadTest.Report.OutputResults {
 		for _, job := range jobs {
 
 			job.ExportOutputToFile(loadTest.Report.OutputToFilePath)
-			logger.Success("Finished creating reports for job %v", *job.Name)
+			sp.Logger().Success("Finished creating reports for job %v", *job.Name)
 		}
 	}
 
 	return nil
 }
 
-func ExecuteLoadTest(loadTest entities.LoadTest) ([]*JobOperation, error) {
+func ExecuteLoadTest(loadTest entities.LoadTest) ([]*domain.JobOperation, error) {
 	if loadTest.DisplayName != "" {
-		logger.Success("Starting %v load test.", loadTest.DisplayName)
+		sp.Logger().Success("Starting %v load test.", loadTest.DisplayName)
 	}
-	loadTesterJobs := make([]*JobOperation, 0)
+	loadTesterJobs := make([]*domain.JobOperation, 0)
 
 	for _, loadTesterJob := range loadTest.Jobs {
 		if loadTesterJob.Disabled {
@@ -73,20 +75,20 @@ func ExecuteLoadTest(loadTest entities.LoadTest) ([]*JobOperation, error) {
 		}
 
 		if loadTesterJob.Target.URL == "" && (loadTesterJob.Target.URLs == nil || len(loadTesterJob.Target.URLs) == 0) {
-			err := errors.New("Url was not defined")
-			logger.Error(err.Error())
+			err := errors.New("url was not defined")
+			sp.Logger().Error(err.Error())
 			return loadTesterJobs, err
 		}
 
-		job := CreateJobOperation()
+		job := domain.CreateJobOperation(infrastructure.GetServiceProvider())
 
 		switch strings.ToLower(loadTesterJob.Type) {
 		case "parallel":
-			job.OperationType = ParallelBlock
+			job.OperationType = domain.ParallelBlock
 		case "sequential":
-			job.OperationType = SequentialBlock
+			job.OperationType = domain.SequentialBlock
 		default:
-			job.OperationType = SequentialBlock
+			job.OperationType = domain.SequentialBlock
 		}
 		if loadTesterJob.Name != "" {
 			jName := strings.ReplaceAll(loadTesterJob.Name, " ", "_")
@@ -150,19 +152,19 @@ func ExecuteLoadTest(loadTest entities.LoadTest) ([]*JobOperation, error) {
 			job.Options.Timeout = loadTesterJob.Target.Timeout
 		}
 		if loadTesterJob.Target.LogResponse {
-			job.Target.logResponse = loadTesterJob.Target.LogResponse
+			job.Target.LogResponse = loadTesterJob.Target.LogResponse
 		}
 
 		if loadTesterJob.ConstantLoad != nil {
-			job.Type = Constant
+			job.Type = domain.Constant
 
 			switch strings.ToLower(loadTesterJob.ConstantLoad.Options.BlockType) {
 			case "parallel":
-				job.Options.BlockType = ParallelBlock
+				job.Options.BlockType = domain.ParallelBlock
 			case "sequential":
-				job.Options.BlockType = SequentialBlock
+				job.Options.BlockType = domain.SequentialBlock
 			default:
-				job.Options.BlockType = SequentialBlock
+				job.Options.BlockType = domain.SequentialBlock
 			}
 
 			if loadTesterJob.ConstantLoad.Duration > 0 {
@@ -172,30 +174,30 @@ func ExecuteLoadTest(loadTest entities.LoadTest) ([]*JobOperation, error) {
 				job.Options.NumberOfBlocks = loadTesterJob.ConstantLoad.Options.NumberOfBlocks
 			}
 			if loadTesterJob.ConstantLoad.Options.BlockInterval > 0 {
-				job.Options.BlockInterval = NewInterval(loadTesterJob.ConstantLoad.Options.BlockInterval)
+				job.Options.BlockInterval = domain.NewInterval(loadTesterJob.ConstantLoad.Options.BlockInterval)
 			}
 			if loadTesterJob.ConstantLoad.Options.CallsPerBlock > 0 {
-				job.Options.TasksPerBlock = NewInterval(loadTesterJob.ConstantLoad.Options.CallsPerBlock)
+				job.Options.TasksPerBlock = domain.NewInterval(loadTesterJob.ConstantLoad.Options.CallsPerBlock)
 			}
 			if loadTesterJob.ConstantLoad.Options.MinTaskInterval > 0 {
-				job.Options.MinTaskInterval = NewInterval(loadTesterJob.ConstantLoad.Options.MinTaskInterval)
+				job.Options.MinTaskInterval = domain.NewInterval(loadTesterJob.ConstantLoad.Options.MinTaskInterval)
 			}
 			if loadTesterJob.ConstantLoad.Options.MaxTaskInterval > 0 {
-				job.Options.MaxTaskInterval = NewInterval(loadTesterJob.ConstantLoad.Options.MaxTaskInterval)
+				job.Options.MaxTaskInterval = domain.NewInterval(loadTesterJob.ConstantLoad.Options.MaxTaskInterval)
 			}
 			if loadTest.Report.MaxTaskOutput > 0 {
 				job.Options.MaxTaskOutput = loadTest.Report.MaxTaskOutput
 			}
 		} else if loadTesterJob.IncreasingLoad != nil {
-			job.Type = Increasing
+			job.Type = domain.Increasing
 
 			switch strings.ToLower(loadTesterJob.IncreasingLoad.Options.BlockType) {
 			case "parallel":
-				job.Options.BlockType = ParallelBlock
+				job.Options.BlockType = domain.ParallelBlock
 			case "sequential":
-				job.Options.BlockType = SequentialBlock
+				job.Options.BlockType = domain.SequentialBlock
 			default:
-				job.Options.BlockType = SequentialBlock
+				job.Options.BlockType = domain.SequentialBlock
 			}
 
 			if loadTesterJob.IncreasingLoad.Duration > 0 {
@@ -205,30 +207,30 @@ func ExecuteLoadTest(loadTest entities.LoadTest) ([]*JobOperation, error) {
 				job.Options.NumberOfBlocks = loadTesterJob.IncreasingLoad.Options.NumberOfBlocks
 			}
 			if loadTesterJob.IncreasingLoad.Options.BlockInterval > 0 {
-				job.Options.BlockInterval = NewInterval(loadTesterJob.IncreasingLoad.Options.BlockInterval)
+				job.Options.BlockInterval = domain.NewInterval(loadTesterJob.IncreasingLoad.Options.BlockInterval)
 			}
 			if loadTesterJob.IncreasingLoad.Options.TotalCalls > 0 {
-				job.Options.TasksPerBlock = NewInterval(loadTesterJob.IncreasingLoad.Options.TotalCalls)
+				job.Options.TasksPerBlock = domain.NewInterval(loadTesterJob.IncreasingLoad.Options.TotalCalls)
 			}
 			if loadTesterJob.IncreasingLoad.Options.MinTaskInterval > 0 {
-				job.Options.MinTaskInterval = NewInterval(loadTesterJob.IncreasingLoad.Options.MinTaskInterval)
+				job.Options.MinTaskInterval = domain.NewInterval(loadTesterJob.IncreasingLoad.Options.MinTaskInterval)
 			}
 			if loadTesterJob.IncreasingLoad.Options.MaxTaskInterval > 0 {
-				job.Options.MaxTaskInterval = NewInterval(loadTesterJob.IncreasingLoad.Options.MaxTaskInterval)
+				job.Options.MaxTaskInterval = domain.NewInterval(loadTesterJob.IncreasingLoad.Options.MaxTaskInterval)
 			}
 			if loadTest.Report.MaxTaskOutput > 0 {
 				job.Options.MaxTaskOutput = loadTest.Report.MaxTaskOutput
 			}
 		} else if loadTesterJob.FuzzyLoad != nil {
-			job.Type = Fuzzy
+			job.Type = domain.Fuzzy
 
 			switch strings.ToLower(loadTesterJob.FuzzyLoad.Options.BlockType) {
 			case "parallel":
-				job.Options.BlockType = ParallelBlock
+				job.Options.BlockType = domain.ParallelBlock
 			case "sequential":
-				job.Options.BlockType = SequentialBlock
+				job.Options.BlockType = domain.SequentialBlock
 			default:
-				job.Options.BlockType = SequentialBlock
+				job.Options.BlockType = domain.SequentialBlock
 			}
 
 			if loadTesterJob.FuzzyLoad.Duration > 0 {
@@ -238,22 +240,22 @@ func ExecuteLoadTest(loadTest entities.LoadTest) ([]*JobOperation, error) {
 				job.Options.NumberOfBlocks = loadTesterJob.FuzzyLoad.Options.NumberOfBlocks
 			}
 			if loadTesterJob.FuzzyLoad.Options.MaxBlockInterval > 0 {
-				job.Options.MaxBlockInterval = NewInterval(loadTesterJob.FuzzyLoad.Options.MaxBlockInterval)
+				job.Options.MaxBlockInterval = domain.NewInterval(loadTesterJob.FuzzyLoad.Options.MaxBlockInterval)
 			}
 			if loadTesterJob.FuzzyLoad.Options.MinBlockInterval > 0 {
-				job.Options.MinBlockInterval = NewInterval(loadTesterJob.FuzzyLoad.Options.MinBlockInterval)
+				job.Options.MinBlockInterval = domain.NewInterval(loadTesterJob.FuzzyLoad.Options.MinBlockInterval)
 			}
 			if loadTesterJob.FuzzyLoad.Options.MaxTasksPerBlock > 0 {
-				job.Options.MaxTasksPerBlock = NewInterval(loadTesterJob.FuzzyLoad.Options.MaxTasksPerBlock)
+				job.Options.MaxTasksPerBlock = domain.NewInterval(loadTesterJob.FuzzyLoad.Options.MaxTasksPerBlock)
 			}
 			if loadTesterJob.FuzzyLoad.Options.MinTasksPerBlock > 0 {
-				job.Options.MinTasksPerBlock = NewInterval(loadTesterJob.FuzzyLoad.Options.MinTasksPerBlock)
+				job.Options.MinTasksPerBlock = domain.NewInterval(loadTesterJob.FuzzyLoad.Options.MinTasksPerBlock)
 			}
 			if loadTesterJob.FuzzyLoad.Options.MinTaskInterval > 0 {
-				job.Options.MinTaskInterval = NewInterval(loadTesterJob.FuzzyLoad.Options.MinTaskInterval)
+				job.Options.MinTaskInterval = domain.NewInterval(loadTesterJob.FuzzyLoad.Options.MinTaskInterval)
 			}
 			if loadTesterJob.FuzzyLoad.Options.MaxTaskInterval > 0 {
-				job.Options.MaxTaskInterval = NewInterval(loadTesterJob.FuzzyLoad.Options.MaxTaskInterval)
+				job.Options.MaxTaskInterval = domain.NewInterval(loadTesterJob.FuzzyLoad.Options.MaxTaskInterval)
 			}
 			if loadTest.Report.MaxTaskOutput > 0 {
 				job.Options.MaxTaskOutput = loadTest.Report.MaxTaskOutput
@@ -262,7 +264,8 @@ func ExecuteLoadTest(loadTest entities.LoadTest) ([]*JobOperation, error) {
 
 		loadTesterJobs = append(loadTesterJobs, job)
 	}
-	logger.Success("Created successfully %v job instructions to execute", fmt.Sprintf("%v", len(loadTesterJobs)))
+
+	sp.Logger().Success("Created successfully %v job instructions to execute", fmt.Sprintf("%v", len(loadTesterJobs)))
 
 	var loadTestJobsWaitGroup sync.WaitGroup
 	loadTestJobsWaitGroup.Add(len(loadTesterJobs))
@@ -270,19 +273,19 @@ func ExecuteLoadTest(loadTest entities.LoadTest) ([]*JobOperation, error) {
 	for i, jobToExecute := range loadTesterJobs {
 		switch strings.ToLower(loadTest.JobType) {
 		case "parallel":
-			logger.Command("Executing job %v in parallel", *jobToExecute.Name)
+			sp.Logger().Command("Executing job %v in parallel", *jobToExecute.Name)
 			go jobToExecute.Execute(&loadTestJobsWaitGroup)
 		case "sequential":
-			logger.Command("Executing job %v in sequence", *jobToExecute.Name)
+			sp.Logger().Command("Executing job %v in sequence", *jobToExecute.Name)
 			jobToExecute.Execute(&loadTestJobsWaitGroup)
 		default:
-			logger.Command("Executing job %v in sequence", *jobToExecute.Name)
+			sp.Logger().Command("Executing job %v in sequence", *jobToExecute.Name)
 			jobToExecute.Execute(&loadTestJobsWaitGroup)
 		}
 
 		if i < len(loadTesterJobs)-1 {
 			if loadTest.WaitBetweenJobs > 0 {
-				logger.Info("Waiting for %v Millisecond for the next job...", fmt.Sprint(loadTest.WaitBetweenJobs))
+				sp.Logger().Info("Waiting for %v Millisecond for the next job...", fmt.Sprint(loadTest.WaitBetweenJobs))
 				time.Sleep(time.Duration(loadTest.WaitBetweenJobs) * time.Millisecond)
 			}
 		}

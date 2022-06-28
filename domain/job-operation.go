@@ -1,4 +1,4 @@
-package jobs
+package domain
 
 import (
 	"fmt"
@@ -14,6 +14,8 @@ const (
 	IncreaseFactor float64 = 0.03
 )
 
+var services ServiceProvider
+
 // JobOperation Entity
 type JobOperation struct {
 	ID            string
@@ -27,7 +29,9 @@ type JobOperation struct {
 }
 
 // CreateJobOperation Creates a new Job Operation Task
-func CreateJobOperation() *JobOperation {
+func CreateJobOperation(sp ServiceProvider) *JobOperation {
+	services = sp
+
 	job := JobOperation{
 		ID:            xid.New().String(),
 		OperationType: ParallelBlock,
@@ -227,6 +231,8 @@ func (j *JobOperation) Execute(wg *sync.WaitGroup) error {
 	j.Result.TimeTaken = endingJobTime.Sub(startingJobTime)
 	j.Result.StartingTime = startingJobTime
 	j.Result.EndingTime = endingJobTime
+
+	services.JobOperationRepo().Upsert(*j)
 	wg.Done()
 	return nil
 }

@@ -1,4 +1,4 @@
-package jobs
+package domain
 
 import "github.com/cjlapao/http-loadtester-go/common"
 
@@ -12,7 +12,7 @@ type JobOperationTarget struct {
 	BasicAuthentications []string
 	UserAgent            string
 	Headers              map[string]string
-	logResponse          bool
+	LogResponse          bool
 }
 
 // CreateTarget Creates a Default Target to the JobOperation

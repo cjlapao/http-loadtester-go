@@ -1,4 +1,4 @@
-package jobs
+package domain
 
 type JobOperationTaskResponseStatusResult struct {
 	Code  int

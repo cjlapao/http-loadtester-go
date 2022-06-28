@@ -1,4 +1,4 @@
-package dbctx
+package database
 
 import (
 	"github.com/cjlapao/common-go/database/mongodb"

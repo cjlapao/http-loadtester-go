@@ -1,4 +1,4 @@
-package jobs
+package domain
 
 import "github.com/cjlapao/common-go/log"
 

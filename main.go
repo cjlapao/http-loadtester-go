@@ -9,8 +9,10 @@ import (
 	"github.com/cjlapao/common-go/log"
 	"github.com/cjlapao/common-go/restapi"
 	"github.com/cjlapao/common-go/version"
-	"github.com/cjlapao/http-loadtester-go/jobs"
-	"github.com/cjlapao/http-loadtester-go/startup"
+	"github.com/cjlapao/http-loadtester-go/controller"
+	"github.com/cjlapao/http-loadtester-go/database"
+	"github.com/cjlapao/http-loadtester-go/infrastructure"
+	"github.com/cjlapao/http-loadtester-go/usecases"
 )
 
 var logger = log.Get()
@@ -49,10 +51,11 @@ func main() {
 	apiMode := helper.GetFlagSwitch("api", false)
 
 	if apiMode {
-		startup.Init()
+		Init()
 	} else {
 		if file != "" {
-			err := jobs.ExecuteFromFile(file)
+			infrastructure.Init()
+			err := usecases.ExecuteFromFile(file)
 			if err != nil {
 				logger.Error("There was an error processing the file")
 				os.Exit(1)
@@ -69,4 +72,16 @@ func main() {
 
 		fmt.Print("Finished")
 	}
+}
+
+func Init() {
+	listener := restapi.GetHttpListener()
+	listener.AddLogger().AddHealthCheck()
+	listener.AddController(controller.LoadController, "/start", "POST")
+	listener.AddController(controller.StartLoadFileController, "/start/file", "POST")
+	listener.AddController(controller.StartLoadMarkdownController, "/start/markdown", "POST")
+
+	database.Init()
+	infrastructure.Init()
+	listener.Start()
 }

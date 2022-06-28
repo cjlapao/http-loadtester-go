@@ -1,4 +1,4 @@
-package jobs
+package domain
 
 // JobOperationOptions Entity
 type JobOperationOptions struct {

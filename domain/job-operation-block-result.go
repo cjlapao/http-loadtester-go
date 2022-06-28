@@ -1,4 +1,4 @@
-package jobs
+package domain
 
 // JobOperationBlockResult Entity
 type JobOperationBlockResult struct {

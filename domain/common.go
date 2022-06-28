@@ -1,4 +1,4 @@
-package jobs
+package domain
 
 import (
 	"github.com/cjlapao/http-loadtester-go/common"

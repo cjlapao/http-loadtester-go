@@ -1,13 +1,13 @@
 package controller
 
-import "github.com/cjlapao/http-loadtester-go/jobs"
+import "github.com/cjlapao/http-loadtester-go/domain"
 
 type LoadTestResponse struct {
 	ID            string
 	Name          *string
-	Type          jobs.JobOPerationType
-	OperationType jobs.BlockType
-	Target        *jobs.JobOperationTarget
-	Options       *jobs.JobOperationOptions
-	Result        *jobs.JobOperationResult
+	Type          domain.JobOPerationType
+	OperationType domain.BlockType
+	Target        *domain.JobOperationTarget
+	Options       *domain.JobOperationOptions
+	Result        *domain.JobOperationResult
 }

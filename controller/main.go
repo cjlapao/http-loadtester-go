@@ -6,7 +6,7 @@ import (
 
 	"github.com/cjlapao/common-go/helper/http_helper"
 	"github.com/cjlapao/http-loadtester-go/entities"
-	"github.com/cjlapao/http-loadtester-go/jobs"
+	"github.com/cjlapao/http-loadtester-go/usecases"
 )
 
 func LoadController(w http.ResponseWriter, r *http.Request) {
@@ -19,7 +19,7 @@ func LoadController(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	results, err := jobs.ExecuteLoadTest(body)
+	results, err := usecases.ExecuteLoadTest(body)
 
 	if err != nil {
 		WriteError(w, err)
@@ -58,7 +58,7 @@ func StartLoadFileController(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	results, err := jobs.ExecuteLoadTest(body)
+	results, err := usecases.ExecuteLoadTest(body)
 
 	if err != nil {
 		WriteError(w, err)
@@ -82,7 +82,7 @@ func StartLoadMarkdownController(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	results, err := jobs.ExecuteLoadTest(body)
+	results, err := usecases.ExecuteLoadTest(body)
 
 	if err != nil {
 		WriteError(w, err)
