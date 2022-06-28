@@ -12,7 +12,7 @@ import (
 	"github.com/cjlapao/http-loadtester-go/entities"
 	"github.com/cjlapao/http-loadtester-go/infrastructure"
 
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 // ExecuteFromFile Execute LoadTest from file

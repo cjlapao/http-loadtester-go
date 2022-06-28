@@ -12,7 +12,7 @@ import (
 	"github.com/cjlapao/common-go/helper"
 
 	"github.com/cjlapao/markdown-go"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 const (
