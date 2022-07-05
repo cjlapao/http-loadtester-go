@@ -7,7 +7,9 @@ type JobOperationTarget struct {
 	URLs                 []string
 	Method               TargetMethod
 	ContentType          string
-	Body                 string
+	RawBody              string
+	FormData             map[string]string
+	FormUrlEncoded       map[string]string
 	JwtTokens            []string
 	BasicAuthentications []string
 	UserAgent            string
@@ -68,7 +70,7 @@ func (j *JobOperationTarget) GetRandomUrl() string {
 		return j.URLs[0]
 	}
 
-	randIndex := common.GetRandomNum(0, len(j.URLs))
+	randIndex := common.GetRandomNumber(0, len(j.URLs))
 
 	return j.URLs[randIndex]
 }
@@ -86,7 +88,7 @@ func (j *JobOperationTarget) GetRandomJwtToken() string {
 		return j.JwtTokens[0]
 	}
 
-	randIndex := common.GetRandomNum(0, len(j.JwtTokens))
+	randIndex := common.GetRandomNumber(0, len(j.JwtTokens))
 
 	return j.JwtTokens[randIndex]
 }
@@ -104,7 +106,7 @@ func (j *JobOperationTarget) GetRandomBasicAuthentication() string {
 		return j.BasicAuthentications[0]
 	}
 
-	randIndex := common.GetRandomNum(0, len(j.BasicAuthentications))
+	randIndex := common.GetRandomNumber(0, len(j.BasicAuthentications))
 
 	return j.BasicAuthentications[randIndex]
 }

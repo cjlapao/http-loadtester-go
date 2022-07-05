@@ -13,17 +13,17 @@ var contextSvc = execution_context.Get()
 func Init() bool {
 	connectionString := contextSvc.Configuration.GetString(constants.MONGO_DB_CONNECTION_STRING)
 	if connectionString == "" {
-		contextSvc.Configuration.UpsertKey("isMongoEnabled", false)
+		contextSvc.Configuration.UpsertKey(constants.DATABASE_ENABLED, false)
 		return false
 	}
 
 	MongoDbSvc = mongodb.Init()
 	MongoDbSvc.ConnectionString = connectionString
-	MongoDbSvc.GlobalDatabaseName = "http_load_tester"
-	contextSvc.Configuration.UpsertKey("isMongoEnabled", true)
+	MongoDbSvc.GlobalDatabaseName = constants.GLOBAL_DATABASE_NAME
+	contextSvc.Configuration.UpsertKey(constants.DATABASE_ENABLED, true)
 	return true
 }
 
 func IsEnabled() bool {
-	return contextSvc.Configuration.GetBool("isMongoEnabled")
+	return contextSvc.Configuration.GetBool(constants.DATABASE_ENABLED)
 }

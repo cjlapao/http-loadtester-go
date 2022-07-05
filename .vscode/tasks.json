@@ -13,6 +13,31 @@
               "showReuseMessage": true,
               "clear": false
             },
+            "options": {
+              "cwd": "${workspaceFolder}/src"
+            },
+            "problemMatcher": [],
+            "label": "build",
+            "command": "go",
+            "args":[ 
+              "build",
+              "-ldflags='-w -s'",
+              "-o",
+              "../bin/http-load-tester.exe"
+            ],
+        },
+        {
+            "type": "shell",
+            "group": "build",            
+            "isBackground": true,
+            "presentation": {
+              "echo": true,
+              "reveal": "silent",
+              "focus": false,
+              "panel": "shared",
+              "showReuseMessage": true,
+              "clear": false
+            },
             "problemMatcher": [],
             "label": "build docker",
             "command": "docker",
@@ -63,6 +88,29 @@
               "${input:docker_image}:${input:docker_image_tag}"
             ],
             "dependsOn": ["build docker"]
+          },
+          {
+            "type": "shell",
+            "group": "build",
+            "isBackground": false,
+            "presentation": {
+              "echo": true,
+              "reveal": "always",
+              "focus": true,
+              "panel": "shared",
+              "showReuseMessage": true,
+              "clear": false
+            },
+            "problemMatcher": [],
+            "options": {
+              "cwd": "${workspaceFolder}/bin"
+            },
+            "label": "run",
+            "command": "${workspaceFolder}/bin/http-load-tester.exe",
+            "args": [],
+            "dependsOn": [
+              "build"
+            ]
           }
     ],
     "inputs": [

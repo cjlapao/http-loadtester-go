@@ -5,7 +5,9 @@ type JobTarget struct {
 	URL                  string            `json:"url" yaml:"url"`
 	URLs                 []string          `json:"urls" yaml:"urls"`
 	Method               string            `json:"method" yaml:"method"`
-	Body                 string            `json:"body" yaml:"body"`
+	RawBody              string            `json:"body" yaml:"body"`
+	FormData             map[string]string `json:"formData" yaml:"formData"`
+	FormUrlEncoded       map[string]string `json:"formUrlEncoded" yaml:"formUrlEncoded"`
 	BearerToken          string            `json:"token" yaml:"token"`
 	BearerTokens         []string          `json:"tokens" yaml:"tokens"`
 	BasicAuthentication  string            `json:"basicAuthentication" yaml:"basicAuthentication"`

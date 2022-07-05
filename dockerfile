@@ -11,6 +11,8 @@ WORKDIR /go/src/cjlapao/http-load-tester
 
 COPY . .
 
+WORKDIR /go/src/cjlapao/http-load-tester/src
+
 # Using go get.
 RUN go get -d -v
 

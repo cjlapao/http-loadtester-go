@@ -5,7 +5,7 @@ import (
 	"math/big"
 )
 
-func GetRandomNum(min, max int) int {
+func GetRandomNumber(min, max int) int {
 	bg := big.NewInt(int64(max) - int64(min))
 
 	n, err := rand.Int(rand.Reader, bg)

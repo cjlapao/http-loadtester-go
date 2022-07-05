@@ -3,6 +3,7 @@ package usecases
 import (
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -41,9 +42,14 @@ func ExecuteFromFile(filepath string) error {
 		return err
 	}
 
+	filePath := loadTest.Report.OutputToFilePath
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		os.MkdirAll(filePath, 0755)
+	}
+
 	if loadTest.Report.OutputToFile {
 		for _, job := range jobs {
-			job.ExportReportToFile(loadTest.Report.OutputToFilePath)
+			job.ExportReportToFile(filePath)
 			sp.Logger().Success("Finished creating reports for job %v", *job.Name)
 		}
 	} else {
@@ -55,7 +61,7 @@ func ExecuteFromFile(filepath string) error {
 	if loadTest.Report.OutputResults {
 		for _, job := range jobs {
 
-			job.ExportOutputToFile(loadTest.Report.OutputToFilePath)
+			job.ExportOutputToFile(filePath)
 			sp.Logger().Success("Finished creating reports for job %v", *job.Name)
 		}
 	}
@@ -106,9 +112,18 @@ func ExecuteLoadTest(loadTest entities.LoadTest) ([]*domain.JobOperation, error)
 			job.Options.LogResult = true
 		}
 
-		if loadTesterJob.Target.Body != "" {
-			job.Target.Body = loadTesterJob.Target.Body
+		if loadTesterJob.Target.RawBody != "" {
+			job.Target.RawBody = loadTesterJob.Target.RawBody
 		}
+
+		if loadTesterJob.Target.FormData != nil {
+			job.Target.FormData = loadTesterJob.Target.FormData
+		}
+
+		if loadTesterJob.Target.FormUrlEncoded != nil {
+			job.Target.FormUrlEncoded = loadTesterJob.Target.FormUrlEncoded
+		}
+
 		if loadTesterJob.Target.ContentType != "" {
 			job.Target.ContentType = loadTesterJob.Target.ContentType
 		}
@@ -260,6 +275,39 @@ func ExecuteLoadTest(loadTest entities.LoadTest) ([]*domain.JobOperation, error)
 			if loadTest.Report.MaxTaskOutput > 0 {
 				job.Options.MaxTaskOutput = loadTest.Report.MaxTaskOutput
 			}
+		} else if loadTesterJob.VirtualUser != nil {
+			// Defining job type, in the virtual ser all blocks are parallel and tasks are sequential
+			// this is to try to simulate users, we still can define a fuzzy load pattern with the
+			// wait between users and user tasks
+			job.Type = domain.VirtualUser
+			job.Options.BlockType = domain.SequentialBlock
+
+			// Defining Virtual User Job Specs
+			if loadTesterJob.VirtualUser.Specs.Duration > 0 {
+				job.Options.Duration = loadTesterJob.VirtualUser.Specs.Duration
+			}
+
+			if loadTesterJob.VirtualUser.Specs.NumberOfVirtualUsers > 0 {
+				job.Options.NumberOfBlocks = loadTesterJob.VirtualUser.Specs.NumberOfVirtualUsers
+			}
+
+			if loadTesterJob.VirtualUser.Specs.MaxVirtualUserInterval > 0 {
+				job.Options.MaxBlockInterval = domain.NewInterval(loadTesterJob.VirtualUser.Specs.MaxVirtualUserInterval)
+			}
+			if loadTesterJob.VirtualUser.Specs.MinVirtualUserInterval > 0 {
+				job.Options.MinBlockInterval = domain.NewInterval(loadTesterJob.VirtualUser.Specs.MinVirtualUserInterval)
+			}
+			if loadTesterJob.VirtualUser.Specs.MaxTaskInterval > 0 {
+				job.Options.MaxTaskInterval = domain.NewInterval(loadTesterJob.VirtualUser.Specs.MaxTaskInterval)
+			}
+			if loadTesterJob.VirtualUser.Specs.MinTaskInterval > 0 {
+				job.Options.MinTaskInterval = domain.NewInterval(loadTesterJob.VirtualUser.Specs.MinTaskInterval)
+			}
+		}
+
+		// Setting the max Task output for reports
+		if loadTest.Report.MaxTaskOutput > 0 {
+			job.Options.MaxTaskOutput = loadTest.Report.MaxTaskOutput
 		}
 
 		loadTesterJobs = append(loadTesterJobs, job)

@@ -9,7 +9,7 @@ import (
 	"github.com/cjlapao/common-go/log"
 	"github.com/cjlapao/common-go/restapi"
 	"github.com/cjlapao/common-go/version"
-	"github.com/cjlapao/http-loadtester-go/controller"
+	"github.com/cjlapao/http-loadtester-go/controllers"
 	"github.com/cjlapao/http-loadtester-go/database"
 	"github.com/cjlapao/http-loadtester-go/infrastructure"
 	"github.com/cjlapao/http-loadtester-go/usecases"
@@ -77,9 +77,9 @@ func main() {
 func Init() {
 	listener := restapi.GetHttpListener()
 	listener.AddLogger().AddHealthCheck()
-	listener.AddController(controller.LoadController, "/start", "POST")
-	listener.AddController(controller.StartLoadFileController, "/start/file", "POST")
-	listener.AddController(controller.StartLoadMarkdownController, "/start/markdown", "POST")
+	listener.AddController(controllers.LoadController, "/start", "POST")
+	listener.AddController(controllers.StartLoadFileController, "/start/file", "POST")
+	listener.AddController(controllers.StartLoadMarkdownController, "/start/markdown", "POST")
 
 	database.Init()
 	infrastructure.Init()

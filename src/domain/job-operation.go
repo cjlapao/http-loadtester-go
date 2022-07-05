@@ -18,14 +18,15 @@ var services ServiceProvider
 
 // JobOperation Entity
 type JobOperation struct {
-	ID            string
-	Name          *string
-	Type          JobOPerationType
-	OperationType BlockType
-	Target        *JobOperationTarget
-	Options       *JobOperationOptions
-	Result        *JobOperationResult
-	Blocks        []*JobOperationBlock
+	ID              string
+	Name            *string
+	Type            JobOPerationType
+	OperationType   BlockType
+	Target          *JobOperationTarget
+	Options         *JobOperationOptions
+	Result          *JobOperationResult
+	Blocks          []*JobOperationBlock
+	ScheduledBlocks []*JobOperationBlock
 }
 
 // CreateJobOperation Creates a new Job Operation Task
@@ -109,6 +110,8 @@ func (j *JobOperation) generateBlocks() {
 				}
 			}
 		}
+	case VirtualUser:
+		GenerateVirtualUserBlocks(j, numberOfBlocks)
 	}
 	j.generateBlockTasks()
 }
@@ -154,6 +157,8 @@ func (j *JobOperation) generateBlockTasks() {
 			for nTask := 0; nTask < tasksPerBlock; nTask++ {
 				block.CreateTask(nTask + 1)
 			}
+		case VirtualUser:
+			block.CreateTask(0)
 		}
 
 	}
@@ -163,77 +168,101 @@ func (j *JobOperation) getRandomBlockInterval() int {
 	max := j.Options.MaxBlockInterval.Value()
 	min := j.Options.MinBlockInterval.Value()
 
-	return common.GetRandomNum(min, max)
+	return common.GetRandomNumber(min, max)
 }
 
 func (j *JobOperation) getRandomTaskCount() int {
 	max := j.Options.MaxTasksPerBlock.Value()
 	min := j.Options.MinTasksPerBlock.value
 
-	return common.GetRandomNum(min, max)
+	return common.GetRandomNumber(min, max)
 }
 
 // Execute Executes a Job Operation creating X amount of blocks that will be run every X seconds
 // This will be defined by the amount of blocks the duration of the load test
 func (j *JobOperation) Execute(wg *sync.WaitGroup) error {
-	startingJobTime := time.Now().UTC()
-	j.generateBlocks()
-	amountOfBlocks := len(j.Blocks)
-	j.Result = j.CreateLoadJobResult()
-	var blockWaitingGroup sync.WaitGroup
-	blockWaitingGroup.Add(amountOfBlocks)
-	if j.Target.IsMultiTargeted() {
-		logger.Success("Performing Load Test on %v targets with %v blocks", fmt.Sprintf("%v", j.Target.CountUrls()), fmt.Sprint(j.Options.NumberOfBlocks))
+	if j.Type == VirtualUser {
+		virtualUser := VirtualUserJobOperation{}
+		virtualUser.Execute(j)
 	} else {
-		logger.Success("Performing Load Test on %v with %v blocks", j.Target.GetUrl(0), fmt.Sprint(j.Options.NumberOfBlocks))
-	}
 
-	startingTime := time.Now().UTC()
-	// Executing the blocks
-	for i, block := range j.Blocks {
-		blockNum := i + 1
-		block.BlockPosition = blockNum
-		block.TotalBlocks = amountOfBlocks
-		logger.Info("Started processing %v Block %v [%v/%v], using %v load with %v %v tasks and %v timeout", fmt.Sprint(j.OperationType), block.ID, fmt.Sprint(blockNum), fmt.Sprint(amountOfBlocks), fmt.Sprint(j.Type), fmt.Sprint(len(*block.Tasks)), fmt.Sprint(block.BlockType), fmt.Sprint(time.Duration(j.Options.Timeout)*time.Millisecond))
-		switch j.OperationType {
-		case ParallelBlock:
-			go block.Execute(&blockWaitingGroup)
-		case SequentialBlock:
-			block.Execute(&blockWaitingGroup)
-		default:
-			block.Execute(&blockWaitingGroup)
+		if j.Target.IsMultiTargeted() {
+			logger.Success("Performing Load Test on %v targets with %v blocks", fmt.Sprintf("%v", j.Target.CountUrls()), fmt.Sprint(j.Options.NumberOfBlocks))
+		} else {
+			logger.Success("Performing Load Test on %v with %v blocks", j.Target.GetUrl(0), fmt.Sprint(j.Options.NumberOfBlocks))
 		}
-		if block.WaitFor.Value() > 0 && i < len(j.Blocks) {
-			logger.Info("Waiting for %v before starting next block", fmt.Sprint(time.Duration(block.WaitFor.Value())*time.Millisecond))
-			time.Sleep(time.Duration(block.WaitFor.Value()) * time.Millisecond)
+
+		startingJobTime := time.Now().UTC()
+		j.Result = j.CreateLoadJobResult()
+
+		for {
+			j.generateBlocks()
+			amountOfBlocks := len(j.Blocks)
+			var blockWaitingGroup sync.WaitGroup
+			blockWaitingGroup.Add(amountOfBlocks)
+
+			startingTime := time.Now().UTC()
+			// Executing the blocks
+			for i, block := range j.Blocks {
+				blockNum := i + 1
+				block.BlockPosition = blockNum
+				block.TotalBlocks = amountOfBlocks
+				logger.Info("Started processing %v Block %v [%v/%v], using %v load with %v %v tasks and %v timeout", fmt.Sprint(j.OperationType), block.ID, fmt.Sprint(blockNum), fmt.Sprint(amountOfBlocks), fmt.Sprint(j.Type), fmt.Sprint(len(*block.Tasks)), fmt.Sprint(block.BlockType), fmt.Sprint(time.Duration(j.Options.Timeout)*time.Millisecond))
+				switch j.OperationType {
+				case ParallelBlock:
+					go block.Execute(&blockWaitingGroup)
+				case SequentialBlock:
+					block.Execute(&blockWaitingGroup)
+				default:
+					block.Execute(&blockWaitingGroup)
+				}
+				if block.WaitFor.Value() > 0 && i < len(j.Blocks) {
+					logger.Info("Waiting for %v before starting next block", fmt.Sprint(time.Duration(block.WaitFor.Value())*time.Millisecond))
+					time.Sleep(time.Duration(block.WaitFor.Value()) * time.Millisecond)
+				}
+			}
+
+			blockWaitingGroup.Wait()
+			endingTime := time.Now().UTC()
+			var duration time.Duration = endingTime.Sub(startingTime)
+
+			j.Result.TotalDurationInSeconds = duration.Seconds()
+			// Parsing the results after we go all of them done
+			for _, block := range j.Blocks {
+				block.Result.Process()
+				*j.Result.BlockResults = append(*j.Result.BlockResults, block.Result)
+			}
+
+			j.Result.ProcessResult()
+			endingJobTime := time.Now().UTC()
+
+			j.Result.TimeTaken = endingJobTime.Sub(startingJobTime)
+			j.Result.StartingTime = startingJobTime
+			j.Result.EndingTime = endingJobTime
+
+			if services.IsDatabaseEnabled() {
+				services.JobOperationRepo().Upsert(*j)
+			}
+
+			expectedEndingTime := startingJobTime.Add(time.Duration(j.Options.Duration) * time.Millisecond)
+			shouldFinish := endingJobTime.After(expectedEndingTime)
+			if j.Options.Duration == 0 || shouldFinish {
+				totalTestTime := endingJobTime.Sub(startingJobTime)
+				if j.Target.IsMultiTargeted() {
+					logger.Success("Finished Load Test on %v targets for %v", fmt.Sprintf("%v", j.Target.CountUrls()), totalTestTime.String())
+
+				} else {
+					logger.Success("Finished Load Test on %v for %v", j.Target.GetUrl(0), totalTestTime.String())
+				}
+
+				wg.Done()
+				break
+			}
+
+			j.Blocks = make([]*JobOperationBlock, 0)
 		}
 	}
 
-	blockWaitingGroup.Wait()
-	endingTime := time.Now().UTC()
-	var duration time.Duration = endingTime.Sub(startingTime)
-
-	j.Result.TotalDurationInSeconds = duration.Seconds()
-	// Parsing the results after we go all of them done
-	for _, block := range j.Blocks {
-		block.Result.Process()
-		*j.Result.BlockResults = append(*j.Result.BlockResults, block.Result)
-	}
-
-	j.Result.ProcessResult()
-	if j.Target.IsMultiTargeted() {
-		logger.Success("Finished Load Test on %v targets for %v seconds", fmt.Sprintf("%v", j.Target.CountUrls()), fmt.Sprint(j.Options.Duration))
-
-	} else {
-		logger.Success("Finished Load Test on %v for %v seconds", j.Target.GetUrl(0), fmt.Sprint(j.Options.Duration))
-	}
-	endingJobTime := time.Now().UTC()
-	j.Result.TimeTaken = endingJobTime.Sub(startingJobTime)
-	j.Result.StartingTime = startingJobTime
-	j.Result.EndingTime = endingJobTime
-
-	services.JobOperationRepo().Upsert(*j)
-	wg.Done()
 	return nil
 }
 

@@ -78,7 +78,7 @@ func (j *JobOperation) MarkDown() string {
 	htb.AddLine(fmt.Sprintf("Task Type: %v", j.Options.BlockType))
 	htb.AddLine(fmt.Sprintf("Timeout: %v", fmt.Sprint(time.Duration(j.Options.Timeout)*time.Millisecond)))
 	htb.AddLine(fmt.Sprintf("Method: %v", j.Target.Method))
-	if j.Target.Body != "" {
+	if j.Target.RawBody != "" {
 		htb.AddLine("Contains Body: Yes")
 	} else {
 		htb.AddLine("Contains Body: No")

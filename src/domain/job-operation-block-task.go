@@ -106,9 +106,23 @@ func (t *JobOperationBlockTask) Execute(wg *sync.WaitGroup) {
 	var err error
 
 	startingTime := time.Now().UTC()
+	contentType := ""
 
-	if t.Target.Body != "" {
-		request, err = http.NewRequest(t.Target.Method.String(), taskTarget, bytes.NewReader([]byte(t.Target.Body)))
+	if t.Target.RawBody != "" {
+		if t.Target.ContentType != "" {
+			contentType = t.Target.ContentType
+		} else {
+			contentType = "text/plain"
+		}
+
+		request, err = http.NewRequest(t.Target.Method.String(), taskTarget, bytes.NewReader([]byte(t.Target.RawBody)))
+	} else if t.Target.FormUrlEncoded != nil && len(t.Target.FormUrlEncoded) > 0 {
+		contentType = "application/x-www-form-urlencoded"
+		request, err = http.NewRequest(t.Target.Method.String(), taskTarget, GenerateFormUrlEncoded(t.Target.FormUrlEncoded))
+	} else if t.Target.FormData != nil && len(t.Target.FormData) > 0 {
+		bodyContentType, body := GenerateFormData(t.Target.FormData)
+		contentType = bodyContentType
+		request, err = http.NewRequest(t.Target.Method.String(), taskTarget, body)
 	} else {
 		request, err = http.NewRequest(t.Target.Method.String(), taskTarget, nil)
 	}
@@ -137,7 +151,9 @@ func (t *JobOperationBlockTask) Execute(wg *sync.WaitGroup) {
 			}
 		}
 
-		if t.Target.ContentType != "" {
+		if contentType != "" {
+			request.Header.Set("Content-Type", contentType)
+		} else if t.Target.ContentType != "" && contentType == "" {
 			request.Header.Set("Content-Type", t.Target.ContentType)
 		}
 
@@ -145,6 +161,7 @@ func (t *JobOperationBlockTask) Execute(wg *sync.WaitGroup) {
 	}
 
 	response, err = client.Do(request.WithContext(ctx))
+	logger.Info("doing call to " + taskTarget)
 	endingTime := time.Now().UTC()
 
 	t.Result.TargetedUri = taskTarget

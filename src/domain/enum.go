@@ -10,6 +10,7 @@ const (
 	Constant JobOPerationType = iota
 	Increasing
 	Fuzzy
+	VirtualUser
 )
 
 // String Converts JobOPerationType Enum to String
@@ -21,6 +22,8 @@ func (t JobOPerationType) String() string {
 		return "increasing"
 	case Fuzzy:
 		return "fuzzy"
+	case VirtualUser:
+		return "vu"
 	default:
 		return "fuzzy"
 	}
