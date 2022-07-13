@@ -1,1 +1,6 @@
 theme: jekyll-theme-architect
+
+collections:
+  api:
+    title: APIs
+    position_number: 1
