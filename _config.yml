@@ -6,7 +6,7 @@ description: Jekyll template for API documentation.
 url: https://http-load-tester.carloslapao.me
 google_analytics_key:
 permalink: pretty
-baseurl: "carloslapao.me"
+baseurl: "http-load-tester.carloslapao.me"
 
 # -----
 # Build
