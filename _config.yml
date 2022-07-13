@@ -3,10 +3,10 @@
 
 title: Aviator
 description: Jekyll template for API documentation.
-url: https://example.com
+url: https://http-load-tester.carloslapao.me
 google_analytics_key:
 permalink: pretty
-baseurl:
+baseurl: carloslapao.me
 
 # -----
 # Build
@@ -29,18 +29,15 @@ exclude:
   - LICENSE
 
 defaults:
-  -
-    scope:
+  - scope:
       path: ""
     values:
       layout: default
-  -
-    scope:
+  - scope:
       type: "documentation"
     values:
       _hide_content: true
-  -
-    scope:
+  - scope:
       type: "api"
     values:
       _hide_content: true
