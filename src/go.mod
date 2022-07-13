@@ -3,7 +3,7 @@ module github.com/cjlapao/http-loadtester-go
 go 1.18
 
 require (
-	github.com/cjlapao/common-go v0.0.20
+	github.com/cjlapao/common-go v0.0.22
 	github.com/cjlapao/markdown-go v0.0.6
 	github.com/rs/xid v1.4.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -31,5 +31,4 @@ require (
 	golang.org/x/sync v0.0.0-20220513210516-0976fa681c29 // indirect
 	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
 	golang.org/x/text v0.3.7 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

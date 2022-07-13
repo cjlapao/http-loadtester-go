@@ -17,15 +17,10 @@ import (
 
 var logger = log.Get()
 var versionSvc = version.Get()
-var api = restapi.NewHttpListener()
 
 func main() {
 	logger.WithTimestamp()
-	versionSvc.Name = "HTTP LoadTester"
-	versionSvc.Author = "carlos Lapao"
-	versionSvc.License = "MIT"
-	versionSvc.Minor = 2
-	versionSvc.Build = 0
+	SetVersion()
 	getVersion := helper.GetFlagSwitch("version", false)
 	if getVersion {
 		format := helper.GetFlagValue("o", "json")
