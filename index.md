@@ -1,4 +1,4 @@
-## Common Framework for Golang
+## Http Load Tester
 
 You can use the [editor on GitHub](https://github.com/cjlapao/http-loadtester-go/edit/gh-pages/index.md) to maintain and preview the content for your website in Markdown files.
 
