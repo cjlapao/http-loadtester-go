@@ -1,8 +1,8 @@
 # ----
 # Site
 
-title: Aviator
-description: Jekyll template for API documentation.
+title: HTTP Load Tester
+description: HTTP Load Tester API documentation.
 url: https://http-load-tester.carloslapao.me
 google_analytics_key:
 permalink: pretty
