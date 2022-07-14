@@ -21,9 +21,11 @@ jobs:
         go-version: 1.17
 
     - name: Build
+      working-directory: src
       run: go build -v ./...
 
     - name: Test
+      working-directory: src
       run: go test -v ./...
   build:
     name: Build
@@ -38,7 +40,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v2
       with:
-        go-version: 1.17
+        go-version: 1.18
     - name: Bump version and push tag
       id: tag_version
       uses: mathieudutour/github-tag-action@v5.4
