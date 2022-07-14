@@ -1,0 +1,53 @@
+namespace:
+  create: true
+  name: "http-load-tester"
+
+secrets:
+
+config:
+  api_prefix: /api/load-tester
+
+app:
+  serviceAccount:
+    create: true
+    name: http-load-tester
+  imagePullPolicy: Always
+  port: 80
+  autoscaling:
+    enabled: false
+    startingReplicas: 1
+    minReplicas: 1
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 80
+    # targetMemoryUtilizationPercentage: 80
+  resources:
+    enabled: true
+    requests:
+      cpu: "0.05"
+      memory: "25Mi"
+    limits:
+      cpu: "0.1"
+      memory: "100Mi"
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: true
+  type: 'istio'
+  gateway: 
+    name: ivanticloud-default-gateway
+    namespace: istio-system
+  hosts:
+    - host: '*'
+      paths:
+        - name: default
+          hostRoute: /api/load-tester/
+          serviceRoute: /api/load-tester/
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

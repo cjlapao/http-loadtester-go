@@ -1,0 +1,246 @@
+name: CI Release
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'go' ]
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.17
+
+    - name: Build
+      run: go build -v ./...
+
+    - name: Test
+      run: go test -v ./...
+  build:
+    name: Build
+    needs: test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'go' ]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.17
+    - name: Bump version and push tag
+      id: tag_version
+      uses: mathieudutour/github-tag-action@v5.4
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+    - shell: bash
+      name: Create tag file
+      run: |
+        echo ${{ steps.tag_version.outputs.new_tag }} > tag.txt
+        echo ${{ steps.tag_version.outputs.changelog }} > tag_changelog.txt
+    - name: Upload tag version
+      uses: actions/upload-artifact@v1
+      with:
+        name: tag_version
+        path: ./tag.txt
+    - name: Upload tag changelog
+      uses: actions/upload-artifact@v1
+      with:
+        name: tag_changelog
+        path: ./tag_changelog.txt
+    - shell: bash
+      name: Bump package version
+      run: |
+        sed -i 's/^var ver = \"[0-9]\.[0-9]\.[0-9]\.[0-9]\"/var ver = "${{ steps.tag_version.outputs.new_tag }}"/g' ./src/version.go
+        sed -i 's/^version: [0-9]\.[0-9]\.[0-9]\.[0-9]/version: ${{ steps.tag_version.outputs.new_tag }}/g' ./charts/Chart.yaml
+        sed -i 's/^appVersion: \"[0-9]\.[0-9]\.[0-9]\.[0-9]\"/appVersion: "${{ steps.tag_version.outputs.new_tag }}"/g' ./charts/Chart.yaml
+    - name: Build Linux x64
+      id: build_linux_x64
+      env:
+        GOOS: linux
+        GOARCH: amd64
+      run: go build -o http_load_tester
+    - name: Zip Linux x64
+      id: zip_linux_x64
+      run: |
+        zip --junk-paths http_load_tester_linux_x64 http_load_tester
+    - name: Upload linux build
+      uses: actions/upload-artifact@v1
+      with:
+        name: http_load_tester_linux_x64
+        path: ./http_load_tester_linux_x64.zip
+    - name: Build Windows x64
+      id: build_windows_x64
+      env:
+        GOOS: windows
+        GOARCH: amd64
+      run: go build -o http_load_tester.exe
+    - name: Zip Windows x64
+      id: zip_windows_x64
+      run: |
+        zip --junk-paths http_load_tester_win_x64 http_load_tester.exe
+    - name: Upload windows build
+      uses: actions/upload-artifact@v1
+      with:
+        name: http_load_tester_win_x64
+        path: ./http_load_tester_win_x64.zip
+  publish_release:
+    name: Publish Release
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'go' ]
+    steps:
+    - name: Download tag
+      uses: actions/download-artifact@v1
+      with:
+        name: tag_version
+    - name: Download tag changelog
+      uses: actions/download-artifact@v1
+      with:
+        name: tag_changelog
+    - name: Output
+      shell: bash
+      id: tag_output
+      run: |
+        echo "::set-output name=TAG_NAME::$(cat tag_version/tag.txt)"
+        echo "::set-output name=TAG_CHANGELOG::$(cat tag_changelog/tag_changelog.txt)"
+    - name: Download linux build
+      uses: actions/download-artifact@v1
+      with:
+        name: http_load_tester_linux_x64
+    - name: Download windows build
+      uses: actions/download-artifact@v1
+      with:
+        name: http_load_tester_win_x64
+    - name: Branch name
+      id: branch_name
+      run: |
+        echo ::set-output name=SOURCE_NAME::${GITHUB_REF#refs/*/}
+        echo ::set-output name=SOURCE_BRANCH::${GITHUB_REF#refs/heads/}
+        echo ::set-output name=SOURCE_TAG::${GITHUB_REF#refs/tags/}
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.tag_output.outputs.TAG_NAME }}
+        release_name: Release ${{ steps.tag_output.outputs.TAG_NAME }}
+        body: ${{ steps.tag_output.outputs.TAG_CHANGELOG }}
+        draft: false
+        prerelease: false
+    - name: Upload Linux x64 Asset
+      id: upload-linux-x64-asset 
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./http_load_tester_linux_x64/http_load_tester_linux_x64.zip
+        asset_name: http_load_tester_linux_x64.zip
+        asset_content_type: application/zip
+    - name: Upload Windows x64 Asset
+      id: upload-windows-x64-asset 
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./http_load_tester_win_x64/http_load_tester_win_x64.zip
+        asset_name: http_load_tester_win_x64.zip
+        asset_content_type: application/zip
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+    - name: Login to DockerHub
+      uses: docker/login-action@v1 
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+    - name: Build and push
+      id: docker_build
+      uses: docker/build-push-action@v2
+      with:
+        push: true
+        tags: |
+          cjlapao/shttp_load_tester:latest
+          cjlapao/http_load_tester:${{ steps.tag_version.outputs.new_tag }}
+    - name: Image digest
+      run: echo ${{ steps.docker_build.outputs.digest }}
+  publish-docker:
+    name: Publish Docker
+    needs: publish_release
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'go' ]
+    steps:
+    - name: Download tag
+      uses: actions/download-artifact@v1
+      with:
+        name: tag_version
+    - name: Output
+      shell: bash
+      id: tag_output
+      run: |
+        echo "::set-output name=TAG_NAME::$(cat tag_version/tag.txt)"
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+    - name: Login to DockerHub
+      uses: docker/login-action@v1 
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+    - name: Build and push
+      id: docker_build
+      uses: docker/build-push-action@v2
+      with:
+        push: true
+        tags: |
+          cjlapao/http_load_tester:latest
+          cjlapao/http_load_tester:${{ steps.tag_output.outputs.TAG_NAME }}
+    - name: Image digest
+      run: echo ${{ steps.docker_build.outputs.digest }}
+  publish-helm:
+    name: Publish Helm Chart
+    needs: publish_release
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'go' ]
+    steps:
+    - name: Download tag
+      uses: actions/download-artifact@v1
+      with:
+        name: tag_version
+    - name: Output
+      shell: bash
+      id: tag_output
+      run: |
+        echo "::set-output name=TAG_NAME::$(cat tag_version/tag.txt)"
+    - shell: bash
+      name: Bump package version
+      run: |
+        sed -i 's/^version: [0-9]\.[0-9]\.[0-9]\.[0-9]/version: ${{ steps.tag_output.outputs.TAG_NAME }}/g' ./charts/Chart.yaml
+        sed -i 's/^appVersion: \"[0-9]\.[0-9]\.[0-9]\.[0-9]\"/appVersion: "${{ steps.tag_output.outputs.TAG_NAME }}"/g' ./charts/Chart.yaml
+    - name: Publish Helm Chart
+      id: upload-windows-x64-asset 
+      uses: J12934/helm-gh-pages-action@master
+      with:
+        access-token: ${{ secrets.GITHUB_TOKEN }}
+        deploy-branch: gh-pages

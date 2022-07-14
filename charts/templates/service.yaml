@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: {{ .Values.namespace.name }}
+  name: {{ include "http-load-tester.fullname" .}}
+spec:
+  {{- if eq (.Values.service.type | lower)  "clusterip" }}
+  type: ClusterIP
+  {{- else if eq (.Values.service.type | lower) "nodeport" }}
+  type: NodePort
+  {{- else if eq (.Values.service.type | lower) "loadbalancer" }}
+  type: LoadBalancer
+  {{- else if eq (.Values.service.type | lower) "externalname" }}
+  type: ExternalName
+  {{- end }}
+  {{- if eq (.Values.service.type | lower)  "none" }}
+  sessionAffinity: None
+  {{- else if eq (.Values.service.type | lower) "clientip" }}
+  sessionAffinity: ClientIP
+  {{- end }}
+  selector:
+  {{- include "http-load-tester.selectorLabels" . | nindent 4 }}
+  ports:
+  - name: http
+    protocol:  TCP
+    port: {{ .Values.service.port }}
+    targetPort: {{ .Values.app.port }}

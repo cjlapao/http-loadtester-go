@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: {{ .Values.namespace.name }}
+  name: {{ include "http-load-tester.fullname" .}}
+  labels: 
+    {{- include "http-load-tester.labels" . | nindent 4 }}
+spec: 
+  {{- if .Values.app.autoscaling.enabled }}
+  replicas: {{ .Values.app.autoscaling.startingReplicas }}
+  {{- end }}
+  selector: 
+    matchLabels:
+    {{- include "http-load-tester.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels: 
+        {{- include "http-load-tester.labels" . | nindent 8 }}
+    spec:
+      containers: 
+      - name: servicebus-cli 
+        image: cjlapao/http-load-tester:latest
+        imagePullPolicy: {{ .Values.app.imagePullPolicy | quote }}
+        ports:
+        - containerPort: {{ .Values.app.port }}
+        env:
+        - name: HTTP_PORT
+          value: {{ .Values.app.port | quote }}
+
+        - name: API_PREFIX
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "http-load-tester.fullname" .}}
+              key: api_prefix
+
+        {{ if .Values.app.resources.enabled }}
+        resources:
+          requests:
+            cpu: {{ .Values.app.resources.requests.cpu | quote }}
+            memory: {{ .Values.app.resources.requests.memory | quote }}
+          limits:
+            cpu: {{ .Values.app.resources.limits.cpu | quote }}
+            memory: {{ .Values.app.resources.limits.memory | quote }}
+        {{ else }}
+        resources: {}
+        {{ end }}  
