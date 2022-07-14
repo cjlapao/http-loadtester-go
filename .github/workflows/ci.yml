@@ -1,9 +1,12 @@
 name: CI Release
 
+# on:
+#   push:
+#     branches: [ main ]
 on:
-  push:
+  pull_request:
     branches: [ main ]
-
+    
 jobs:
   test:
     name: Test
@@ -72,31 +75,35 @@ jobs:
       env:
         GOOS: linux
         GOARCH: amd64
+      working-directory: src
       run: go build -o http_load_tester
     - name: Zip Linux x64
       id: zip_linux_x64
+      working-directory: src
       run: |
         zip --junk-paths http_load_tester_linux_x64 http_load_tester
     - name: Upload linux build
       uses: actions/upload-artifact@v1
       with:
         name: http_load_tester_linux_x64
-        path: ./http_load_tester_linux_x64.zip
+        path: ./src/http_load_tester_linux_x64.zip
     - name: Build Windows x64
       id: build_windows_x64
       env:
         GOOS: windows
         GOARCH: amd64
+      working-directory: src
       run: go build -o http_load_tester.exe
     - name: Zip Windows x64
       id: zip_windows_x64
+      working-directory: src
       run: |
         zip --junk-paths http_load_tester_win_x64 http_load_tester.exe
     - name: Upload windows build
       uses: actions/upload-artifact@v1
       with:
         name: http_load_tester_win_x64
-        path: ./http_load_tester_win_x64.zip
+        path: ./src/http_load_tester_win_x64.zip
   publish_release:
     name: Publish Release
     needs: build
