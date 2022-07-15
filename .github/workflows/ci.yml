@@ -230,7 +230,6 @@ jobs:
     - shell: bash
       name: Bump package version
       run: |
-        ls -la
         sed -i 's/^version: [0-9]\.[0-9]\.[0-9]\.[0-9]/version: ${{ steps.tag_output.outputs.TAG_NAME }}/g' ./charts/Chart.yaml
         sed -i 's/^appVersion: \"[0-9]\.[0-9]\.[0-9]\.[0-9]\"/appVersion: "${{ steps.tag_output.outputs.TAG_NAME }}"/g' ./charts/Chart.yaml
     - name: Publish Helm Chart
@@ -238,4 +237,3 @@ jobs:
       uses: J12934/helm-gh-pages-action@master
       with:
         access-token: ${{ secrets.GITHUB_TOKEN }}
-        deploy-branch: gh-pages
