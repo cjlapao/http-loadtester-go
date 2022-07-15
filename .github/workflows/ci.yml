@@ -181,6 +181,7 @@ jobs:
       matrix:
         language: [ 'go' ]
     steps:
+    - uses: actions/checkout@v2
     - name: Download tag
       uses: actions/download-artifact@v1
       with:
@@ -216,6 +217,7 @@ jobs:
       matrix:
         language: [ 'go' ]
     steps:
+    - uses: actions/checkout@v2
     - name: Download tag
       uses: actions/download-artifact@v1
       with:
