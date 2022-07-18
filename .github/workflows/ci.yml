@@ -81,7 +81,7 @@ jobs:
     - name: Upload Helm Chart
       uses: actions/upload-artifact@v1
       with:
-        name: helm_chat
+        name: helm_chart
         path: ./charts
     - name: Build Linux x64
       id: build_linux_x64
@@ -203,7 +203,8 @@ jobs:
       shell: bash
       id: tag_output
       run: |
-        echo "::set-output name=TAG_NAME::$(cat tag_version/tag.txt)"
+        NEW_TAG_NAME=$(cat tag_version/tag.txt | sed 's/v//g')
+        echo "::set-output name=TAG_NAME::$NEW_TAG_NAME"
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v1
     - name: Login to DockerHub
