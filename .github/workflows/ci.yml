@@ -76,8 +76,6 @@ jobs:
         git config user.name "$GITHUB_ACTOR"
         git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
     - name: stage changed files
-      run: git checkout ${GITHUB_REF#refs/heads/}
-    - name: stage changed files
       run: git add .
     - name: commit changed files
       run: git commit -m "Auto updating TODO.txt"
