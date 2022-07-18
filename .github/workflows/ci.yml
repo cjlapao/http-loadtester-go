@@ -249,7 +249,7 @@ jobs:
     - name: Helm Package
       run: |
         helm package ./chart_files -d charts
-        helm repo index --url https://cjlapao.github.io/http-load-tester/charts ./charts
+        helm repo index --url https://http-load-tester.carloslapao.com/charts ./charts
         rm -R chart_files
     - uses: stefanzweifel/git-auto-commit-action@v4
       with:
