@@ -77,17 +77,12 @@ jobs:
         sed -i "s/^var ver = \"[[:digit:]]\+\.[[:digit:]]\+\.[[:digit:]]\+\"/var ver = \"$NEW_TAG_NAME\"/g" ./src/main.go
         sed -i "s/^version: [[:digit:]]\+\.[[:digit:]]\+\.[[:digit:]]\+/version: $NEW_TAG_NAME/g" ./charts/Chart.yaml
         sed -i "s/^appVersion: \"[[:digit:]]\+\.[[:digit:]]\+\.[[:digit:]]\+\"/appVersion: \"$NEW_TAG_NAME\"/g" ./charts/Chart.yaml
-    - name: Configure Git
-      run: |
-        git config user.name "$GITHUB_ACTOR"
-        git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
-    # - name: stage changed files
-    #   run: git add .
-    # - name: commit changed files
-    #   run: git commit -m "Auto updating TODO.txt"
-    # - name: push code to branch
-    #   run: git push origin ${GITHUB_REF#refs/heads/}
     - uses: stefanzweifel/git-auto-commit-action@v4
+    - name: Upload Helm Chart
+      uses: actions/upload-artifact@v1
+      with:
+        name: helm_chat
+        path: ./charts
     - name: Build Linux x64
       id: build_linux_x64
       env:
@@ -236,49 +231,23 @@ jobs:
         language: [ 'go' ]
     steps:
     - uses: actions/checkout@v2
-    - name: Download tag
+      with:
+        ref: gh-pages
+    - name: Download Chart
       uses: actions/download-artifact@v1
       with:
-        name: tag_version
-    - name: Output
-      shell: bash
-      id: tag_output
-      run: |
-        echo "::set-output name=TAG_NAME::$(cat tag_version/tag.txt)"
-    # - shell: bash
-    #   name: Bump package version
-    #   run: |
-    #     NEW_TAG_NAME=$(echo $TAG_NAME | sed 's/v//g')
-    #     sed -i "s/^version: [0-9]\.[0-9]\.[0-9]\.[0-9]/version: $NEW_TAG_NAME/g" ./charts/Chart.yaml
-    #     sed -i "s/^appVersion: \"[0-9]\.[0-9]\.[0-9]\.[0-9]\"/appVersion: "$NEW_TAG_NAME"/g" ./charts/Chart.yaml
-    #     cat ./charts/Chart.yaml
-    - name: Configure Git
-      run: |
-        git config user.name "$GITHUB_ACTOR"
-        git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+        name: helm_chart
+        path: chart_files
     - name: Install Helm
       uses: azure/setup-helm@v1
       with:
         version: v3.8.1
-    - name: test1
+    - name: Helm Chart Lint
       run: |
-         echo "Installing chart-releaser on $install_dir..."
-         curl -sSLo cr.tar.gz "https://github.com/helm/chart-releaser/releases/download/$version/chart-releaser_${version#v}_linux_amd64.tar.gz"
-         tar -xzf cr.tar.gz
-         rm -f cr.tar.gz
-         cr package ./charts
-         cr upload -o $GITHUB_ACTOR -r http-loadtester-go  -c "$(git rev-parse HEAD)" --token ${{ secrets.GITHUB_TOKEN }}
-    # - name: Run chart-releaser
-    #   uses: helm/chart-releaser-action@v1.4.0
-    #   with:
-    #     charts_repo_url: "https://cjlapao.github.io/http-loadtester-go"
-    #     charts_dir: "./charts"
-    #   env:
-    #     CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-    # - name: Publish Helm Chart
-    #   id: upload-windows-x64-asset 
-    #   uses: J12934/helm-gh-pages-action@master
-    #   with:
-    #     access-token: ${{ secrets.GITHUB_TOKEN }}
-    #     charts-folder: charts
-    #     deploy-branch: main
+        helm lint ./charts
+    - name: Helm Package
+      run: |
+        helm package ./chart_files -d charts
+        helm repo index --url https://cjlapao.github.io/http-load-tester/charts ./charts
+        rm -R chart_files
+    - uses: stefanzweifel/git-auto-commit-action@v4
