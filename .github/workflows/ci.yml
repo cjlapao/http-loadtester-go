@@ -252,3 +252,6 @@ jobs:
         helm repo index --url https://cjlapao.github.io/http-load-tester/charts ./charts
         rm -R chart_files
     - uses: stefanzweifel/git-auto-commit-action@v4
+      with:
+        commit_message: "chart bumped"
+        branch: gh-pages
