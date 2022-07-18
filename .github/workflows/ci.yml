@@ -79,8 +79,8 @@ jobs:
       run: git add .
     - name: commit changed files
       run: git commit -m "Auto updating TODO.txt"
-    - name: push code to branch
-      run: git push origin ${GITHUB_REF#refs/heads/}
+    # - name: push code to branch
+    #   run: git push origin ${GITHUB_REF#refs/heads/}
     - uses: pocket-apps/action-update-version@v1
       with:
         files: './charts/Chart.yaml'
