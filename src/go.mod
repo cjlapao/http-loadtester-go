@@ -3,7 +3,7 @@ module github.com/cjlapao/http-loadtester-go
 go 1.18
 
 require (
-	github.com/cjlapao/common-go v0.0.22
+	github.com/cjlapao/common-go v0.0.23
 	github.com/cjlapao/markdown-go v0.0.6
 	github.com/rs/xid v1.4.0
 	gopkg.in/yaml.v3 v3.0.1

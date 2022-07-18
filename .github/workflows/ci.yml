@@ -230,8 +230,9 @@ jobs:
     - shell: bash
       name: Bump package version
       run: |
-        sed -i 's/^version: [0-9]\.[0-9]\.[0-9]\.[0-9]/version: ${{ steps.tag_output.outputs.TAG_NAME }}/g' ./charts/Chart.yaml
-        sed -i 's/^appVersion: \"[0-9]\.[0-9]\.[0-9]\.[0-9]\"/appVersion: "${{ steps.tag_output.outputs.TAG_NAME }}"/g' ./charts/Chart.yaml
+        NEW_TAG_NAME=$(echo $TAG_NAME | sed 's/v//g')
+        sed -i "s/^version: [0-9]\.[0-9]\.[0-9]\.[0-9]/version: $NEW_TAG_NAME/g" ./charts/Chart.yaml
+        sed -i "s/^appVersion: \"[0-9]\.[0-9]\.[0-9]\.[0-9]\"/appVersion: "$NEW_TAG_NAME"/g" ./charts/Chart.yaml
         cat ./charts/Chart.yaml
     - name: Configure Git
       run: |
