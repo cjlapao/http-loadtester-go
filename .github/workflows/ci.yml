@@ -76,10 +76,12 @@ jobs:
         git config user.name "$GITHUB_ACTOR"
         git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
     - name: stage changed files
+      run: git checkout $GITHUB_REF
+    - name: stage changed files
       run: git add .
     - name: commit changed files
       run: git commit -m "Auto updating TODO.txt"
-    - name: push code to main
+    - name: push code to branch
       run: git push
     - name: Build Linux x64
       id: build_linux_x64
