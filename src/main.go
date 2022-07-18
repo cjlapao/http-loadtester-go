@@ -15,7 +15,7 @@ import (
 	"github.com/cjlapao/http-loadtester-go/usecases"
 )
 
-var ver = "0.0.0"
+var ver = "0.0.26"
 var logger = log.Get()
 var versionSvc = version.Get()
 
