@@ -70,6 +70,7 @@ jobs:
         sed -i 's/^var ver = \"[0-9]\.[0-9]\.[0-9]\.[0-9]\"/var ver = "${{ steps.tag_version.outputs.new_tag }}"/g' ./src/main.go
         sed -i 's/^version: [0-9]\.[0-9]\.[0-9]\.[0-9]/version: ${{ steps.tag_version.outputs.new_tag }}/g' ./charts/Chart.yaml
         sed -i 's/^appVersion: \"[0-9]\.[0-9]\.[0-9]\.[0-9]\"/appVersion: "${{ steps.tag_version.outputs.new_tag }}"/g' ./charts/Chart.yaml
+        echo ${GITHUB_REF#refs/heads/}
     - name: Configure Git
       run: |
         git config user.name "$GITHUB_ACTOR"
@@ -78,10 +79,8 @@ jobs:
       run: git add .
     - name: commit changed files
       run: git commit -m "Auto updating TODO.txt"
-    - name: fetch from main
-      run: git fetch origin main
     - name: push code to main
-      run: git push origin HEAD:main
+      run: git push
     - name: Build Linux x64
       id: build_linux_x64
       env:
