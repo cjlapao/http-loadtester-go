@@ -69,7 +69,7 @@ jobs:
     - shell: bash
       name: Bump package version
       run: |
-        NEW_TAG_NAME=$(echo $TAG_NAME | sed 's/v//g')
+        NEW_TAG_NAME=$(echo ${{ steps.tag_version.outputs.new_tag }} | sed 's/v//g')
         sed -i "s/^var ver = \"[[:digit:]]\+\.[[:digit:]]\+\.[[:digit:]]\+\"/var ver = \"$NEW_TAG_NAME\"/g" ./src/main.go
         sed -i "s/^version: [[:digit:]]\+\.[[:digit:]]\+\.[[:digit:]]\+/version: $NEW_TAG_NAME/g" ./charts/Chart.yaml
         sed -i "s/^appVersion: \"[[:digit:]]\+\.[[:digit:]]\+\.[[:digit:]]\+\"/appVersion: \"$NEW_TAG_NAME\"/g" ./charts/Chart.yaml
@@ -241,13 +241,13 @@ jobs:
       id: tag_output
       run: |
         echo "::set-output name=TAG_NAME::$(cat tag_version/tag.txt)"
-    - shell: bash
-      name: Bump package version
-      run: |
-        NEW_TAG_NAME=$(echo $TAG_NAME | sed 's/v//g')
-        sed -i "s/^version: [0-9]\.[0-9]\.[0-9]\.[0-9]/version: $NEW_TAG_NAME/g" ./charts/Chart.yaml
-        sed -i "s/^appVersion: \"[0-9]\.[0-9]\.[0-9]\.[0-9]\"/appVersion: "$NEW_TAG_NAME"/g" ./charts/Chart.yaml
-        cat ./charts/Chart.yaml
+    # - shell: bash
+    #   name: Bump package version
+    #   run: |
+    #     NEW_TAG_NAME=$(echo $TAG_NAME | sed 's/v//g')
+    #     sed -i "s/^version: [0-9]\.[0-9]\.[0-9]\.[0-9]/version: $NEW_TAG_NAME/g" ./charts/Chart.yaml
+    #     sed -i "s/^appVersion: \"[0-9]\.[0-9]\.[0-9]\.[0-9]\"/appVersion: "$NEW_TAG_NAME"/g" ./charts/Chart.yaml
+    #     cat ./charts/Chart.yaml
     - name: Configure Git
       run: |
         git config user.name "$GITHUB_ACTOR"
