@@ -2,13 +2,23 @@ apiVersion: v1
 entries:
   http-load-tester:
   - apiVersion: v2
+    appVersion: 0.0.34
+    created: "2022-07-18T16:17:00.4066007Z"
+    description: High performance load tester for http calls
+    digest: bd3e085854c6ec3c64a4233e19b96f45d30b1ae784d67fea7180b24991ffafd3
+    name: http-load-tester
+    type: application
+    urls:
+    - https://http-load-tester.carloslapao.com/charts/http-load-tester-0.0.34.tgz
+    version: 0.0.34
+  - apiVersion: v2
     appVersion: 0.0.33
-    created: "2022-07-18T16:10:26.88463412Z"
+    created: "2022-07-18T16:17:00.406139393Z"
     description: High performance load tester for http calls
     digest: e865fb4909253f34cf218aaba2d0315efd4f5d559d97e83a3311c316909f0f4c
     name: http-load-tester
     type: application
     urls:
-    - https://cjlapao.github.io/http-load-tester/charts/http-load-tester-0.0.33.tgz
+    - https://http-load-tester.carloslapao.com/charts/http-load-tester-0.0.33.tgz
     version: 0.0.33
-generated: "2022-07-18T16:10:26.883955211Z"
+generated: "2022-07-18T16:17:00.405467283Z"
