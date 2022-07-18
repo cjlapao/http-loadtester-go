@@ -68,8 +68,8 @@ jobs:
       name: Bump package version
       run: |
         sed -i 's/^var ver = \"[0-9]\.[0-9]\.[0-9]\.[0-9]\"/var ver = "${{ steps.tag_version.outputs.new_tag }}"/g' ./src/main.go
-        sed -i 's/^version: [0-9]\.[0-9]\.[0-9]\.[0-9]/version: ${{ steps.tag_version.outputs.new_tag }}/g' ./charts/Chart.yaml
-        sed -i 's/^appVersion: \"[0-9]\.[0-9]\.[0-9]\.[0-9]\"/appVersion: "${{ steps.tag_version.outputs.new_tag }}"/g' ./charts/Chart.yaml
+        sed -i 's/^version: [0-9]\.[0-9]\.[0-9]/version: ${{ steps.tag_version.outputs.new_tag }}/g' ./charts/Chart.yaml
+        sed -i 's/^appVersion: \"[0-9]\.[0-9]\.[0-9]\"/appVersion: "${{ steps.tag_version.outputs.new_tag }}"/g' ./charts/Chart.yaml
         echo ${GITHUB_REF#refs/heads/}
     - name: Configure Git
       run: |
@@ -81,6 +81,11 @@ jobs:
       run: git commit -m "Auto updating TODO.txt"
     - name: push code to branch
       run: git push origin ${GITHUB_REF#refs/heads/}
+    - uses: pocket-apps/action-update-version@v1
+      with:
+        files: './charts/Chart.yaml'
+        version-regexp: 'version: \d+.\d+.\d+'
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
     - name: Build Linux x64
       id: build_linux_x64
       env:
