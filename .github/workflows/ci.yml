@@ -66,6 +66,10 @@ jobs:
       with:
         name: tag_changelog
         path: ./tag_changelog.txt
+    - name: "Removing tag files"
+      run: |
+        rm tag.txt
+        rm tag_changelog.txt
     - shell: bash
       name: Bump package version
       run: |
@@ -256,21 +260,21 @@ jobs:
       uses: azure/setup-helm@v1
       with:
         version: v3.8.1
-    # - name: test1
-    #   run: |
-    #      echo "Installing chart-releaser on $install_dir..."
-    #      curl -sSLo cr.tar.gz "https://github.com/helm/chart-releaser/releases/download/$version/chart-releaser_${version#v}_linux_amd64.tar.gz"
-    #      tar -xzf cr.tar.gz
-    #      rm -f cr.tar.gz
-    #      cr package ./charts
-    #      cr upload -o $GITHUB_ACTOR -r http-loadtester-go  -c "$(git rev-parse HEAD)"
-    - name: Run chart-releaser
-      uses: helm/chart-releaser-action@v1.4.0
-      with:
-        charts_repo_url: "https://cjlapao.github.io/http-loadtester-go"
-        charts_dir: "./charts"
-      env:
-        CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+    - name: test1
+      run: |
+         echo "Installing chart-releaser on $install_dir..."
+         curl -sSLo cr.tar.gz "https://github.com/helm/chart-releaser/releases/download/$version/chart-releaser_${version#v}_linux_amd64.tar.gz"
+         tar -xzf cr.tar.gz
+         rm -f cr.tar.gz
+         cr package ./charts
+         cr upload -o $GITHUB_ACTOR -r http-loadtester-go  -c "$(git rev-parse HEAD)" --token ${{ secrets.GITHUB_TOKEN }}
+    # - name: Run chart-releaser
+    #   uses: helm/chart-releaser-action@v1.4.0
+    #   with:
+    #     charts_repo_url: "https://cjlapao.github.io/http-loadtester-go"
+    #     charts_dir: "./charts"
+    #   env:
+    #     CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
     # - name: Publish Helm Chart
     #   id: upload-windows-x64-asset 
     #   uses: J12934/helm-gh-pages-action@master
