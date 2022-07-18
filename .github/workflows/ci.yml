@@ -69,10 +69,10 @@ jobs:
     - shell: bash
       name: Bump package version
       run: |
-        sed -i 's/^var ver = \"[0-9]\.[0-9]\.[0-9]\.[0-9]\"/var ver = "${{ steps.tag_version.outputs.new_tag }}"/g' ./src/main.go
-        sed -i 's/^version: [0-9]\.[0-9]\.[0-9]/version: ${{ steps.tag_version.outputs.new_tag }}/g' ./charts/Chart.yaml
-        sed -i 's/^appVersion: \"[0-9]\.[0-9]\.[0-9]\"/appVersion: "${{ steps.tag_version.outputs.new_tag }}"/g' ./charts/Chart.yaml
-        echo ${GITHUB_REF#refs/heads/}
+        NEW_TAG_NAME=$(echo $TAG_NAME | sed 's/v//g')
+        sed -i "s/^var ver = \"[[:digit:]]\+\.[[:digit:]]\+\.[[:digit:]]\+\"/var ver = \"$NEW_TAG_NAME\"/g" ./src/main.go
+        sed -i "s/^version: [[:digit:]]\+\.[[:digit:]]\+\.[[:digit:]]\+/version: $NEW_TAG_NAME/g" ./charts/Chart.yaml
+        sed -i "s/^appVersion: \"[[:digit:]]\+\.[[:digit:]]\+\.[[:digit:]]\+\"/appVersion: \"$NEW_TAG_NAME\"/g" ./charts/Chart.yaml
     - name: Configure Git
       run: |
         git config user.name "$GITHUB_ACTOR"
