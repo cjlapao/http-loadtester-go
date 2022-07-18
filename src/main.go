@@ -15,6 +15,7 @@ import (
 	"github.com/cjlapao/http-loadtester-go/usecases"
 )
 
+var ver = "0.0.0.0"
 var logger = log.Get()
 var versionSvc = version.Get()
 
@@ -79,4 +80,17 @@ func Init() {
 	database.Init()
 	infrastructure.Init()
 	listener.Start()
+}
+
+func SetVersion() {
+	versionSvc.Name = "HTTP LoadTester"
+	versionSvc.Author = "carlos Lapao"
+	versionSvc.License = "MIT"
+	strVer, err := version.FromString(ver)
+	if err == nil {
+		versionSvc.Major = strVer.Major
+		versionSvc.Minor = strVer.Minor
+		versionSvc.Build = strVer.Build
+		versionSvc.Rev = strVer.Rev
+	}
 }
