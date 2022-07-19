@@ -3,33 +3,10 @@ name: CI Release
 on:
   push:
     branches: [ main ]
-
+    
 jobs:
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        language: [ 'go' ]
-    steps:
-    - uses: actions/checkout@v2
-
-    - name: Set up Go
-      uses: actions/setup-go@v2
-      with:
-        go-version: 1.17
-
-    - name: Build
-      working-directory: src
-      run: go build -v ./...
-
-    - name: Test
-      working-directory: src
-      run: go test -v ./...
   build:
     name: Build
-    needs: test
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -37,6 +14,8 @@ jobs:
         language: [ 'go' ]
     steps:
     - uses: actions/checkout@v2
+      with:
+        ref: ${{ github.head_ref }}
     - name: Set up Go
       uses: actions/setup-go@v2
       with:
@@ -61,42 +40,57 @@ jobs:
       with:
         name: tag_changelog
         path: ./tag_changelog.txt
+    - name: Removing tag files
+      run: |
+        rm tag.txt
+        rm tag_changelog.txt
     - shell: bash
       name: Bump package version
       run: |
-        sed -i 's/^var ver = \"[0-9]\.[0-9]\.[0-9]\.[0-9]\"/var ver = "${{ steps.tag_version.outputs.new_tag }}"/g' ./src/version.go
-        sed -i 's/^version: [0-9]\.[0-9]\.[0-9]\.[0-9]/version: ${{ steps.tag_version.outputs.new_tag }}/g' ./charts/Chart.yaml
-        sed -i 's/^appVersion: \"[0-9]\.[0-9]\.[0-9]\.[0-9]\"/appVersion: "${{ steps.tag_version.outputs.new_tag }}"/g' ./charts/Chart.yaml
+        NEW_TAG_NAME=$(echo ${{ steps.tag_version.outputs.new_tag }} | sed 's/v//g')
+        sed -i "s/^var ver = \"[[:digit:]]\+\.[[:digit:]]\+\.[[:digit:]]\+\"/var ver = \"$NEW_TAG_NAME\"/g" ./src/main.go
+        sed -i "s/^version: [[:digit:]]\+\.[[:digit:]]\+\.[[:digit:]]\+/version: $NEW_TAG_NAME/g" ./charts/Chart.yaml
+        sed -i "s/^appVersion: \"[[:digit:]]\+\.[[:digit:]]\+\.[[:digit:]]\+\"/appVersion: \"$NEW_TAG_NAME\"/g" ./charts/Chart.yaml
+    - uses: stefanzweifel/git-auto-commit-action@v4
+    - name: Upload Helm Chart
+      uses: actions/upload-artifact@v1
+      with:
+        name: helm_chart
+        path: ./charts
     - name: Build Linux x64
       id: build_linux_x64
       env:
         GOOS: linux
         GOARCH: amd64
+      working-directory: src
       run: go build -o http_load_tester
     - name: Zip Linux x64
       id: zip_linux_x64
+      working-directory: src
       run: |
         zip --junk-paths http_load_tester_linux_x64 http_load_tester
     - name: Upload linux build
       uses: actions/upload-artifact@v1
       with:
         name: http_load_tester_linux_x64
-        path: ./http_load_tester_linux_x64.zip
+        path: ./src/http_load_tester_linux_x64.zip
     - name: Build Windows x64
       id: build_windows_x64
       env:
         GOOS: windows
         GOARCH: amd64
+      working-directory: src
       run: go build -o http_load_tester.exe
     - name: Zip Windows x64
       id: zip_windows_x64
+      working-directory: src
       run: |
         zip --junk-paths http_load_tester_win_x64 http_load_tester.exe
     - name: Upload windows build
       uses: actions/upload-artifact@v1
       with:
         name: http_load_tester_win_x64
-        path: ./http_load_tester_win_x64.zip
+        path: ./src/http_load_tester_win_x64.zip
   publish_release:
     name: Publish Release
     needs: build
@@ -165,23 +159,6 @@ jobs:
         asset_path: ./http_load_tester_win_x64/http_load_tester_win_x64.zip
         asset_name: http_load_tester_win_x64.zip
         asset_content_type: application/zip
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v1
-    - name: Login to DockerHub
-      uses: docker/login-action@v1 
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
-    - name: Build and push
-      id: docker_build
-      uses: docker/build-push-action@v2
-      with:
-        push: true
-        tags: |
-          cjlapao/shttp_load_tester:latest
-          cjlapao/http_load_tester:${{ steps.tag_version.outputs.new_tag }}
-    - name: Image digest
-      run: echo ${{ steps.docker_build.outputs.digest }}
   publish-docker:
     name: Publish Docker
     needs: publish_release
@@ -191,6 +168,7 @@ jobs:
       matrix:
         language: [ 'go' ]
     steps:
+    - uses: actions/checkout@v2
     - name: Download tag
       uses: actions/download-artifact@v1
       with:
@@ -199,7 +177,8 @@ jobs:
       shell: bash
       id: tag_output
       run: |
-        echo "::set-output name=TAG_NAME::$(cat tag_version/tag.txt)"
+        NEW_TAG_NAME=$(cat tag_version/tag.txt | sed 's/v//g')
+        echo "::set-output name=TAG_NAME::$NEW_TAG_NAME"
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v1
     - name: Login to DockerHub
@@ -226,23 +205,24 @@ jobs:
       matrix:
         language: [ 'go' ]
     steps:
-    - name: Download tag
+    - uses: actions/checkout@v2
+      with:
+        ref: gh-pages
+    - name: Download Chart
       uses: actions/download-artifact@v1
       with:
-        name: tag_version
-    - name: Output
-      shell: bash
-      id: tag_output
-      run: |
-        echo "::set-output name=TAG_NAME::$(cat tag_version/tag.txt)"
-    - shell: bash
-      name: Bump package version
-      run: |
-        sed -i 's/^version: [0-9]\.[0-9]\.[0-9]\.[0-9]/version: ${{ steps.tag_output.outputs.TAG_NAME }}/g' ./charts/Chart.yaml
-        sed -i 's/^appVersion: \"[0-9]\.[0-9]\.[0-9]\.[0-9]\"/appVersion: "${{ steps.tag_output.outputs.TAG_NAME }}"/g' ./charts/Chart.yaml
-    - name: Publish Helm Chart
-      id: upload-windows-x64-asset 
-      uses: J12934/helm-gh-pages-action@master
+        name: helm_chart
+        path: chart_files
+    - name: Install Helm
+      uses: azure/setup-helm@v1
       with:
-        access-token: ${{ secrets.GITHUB_TOKEN }}
-        deploy-branch: gh-pages
+        version: v3.8.1
+    - name: Helm Package
+      run: |
+        helm package ./chart_files -d charts
+        helm repo index --url https://http-load-tester.carloslapao.com/charts ./charts
+        rm -R chart_files
+    - uses: stefanzweifel/git-auto-commit-action@v4
+      with:
+        commit_message: "chart bumped"
+        branch: gh-pages

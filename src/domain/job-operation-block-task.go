@@ -161,7 +161,7 @@ func (t *JobOperationBlockTask) Execute(wg *sync.WaitGroup) {
 	}
 
 	response, err = client.Do(request.WithContext(ctx))
-	logger.Info("doing call to " + taskTarget)
+	logger.Debug("doing call to " + taskTarget)
 	endingTime := time.Now().UTC()
 
 	t.Result.TargetedUri = taskTarget
