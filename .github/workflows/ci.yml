@@ -1,38 +1,12 @@
 name: CI Release
 
-# on:
-#   push:
-#     branches: [ main ]
 on:
-  pull_request:
+  push:
     branches: [ main ]
     
 jobs:
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        language: [ 'go' ]
-    steps:
-    - uses: actions/checkout@v2
-
-    - name: Set up Go
-      uses: actions/setup-go@v2
-      with:
-        go-version: 1.17
-
-    - name: Build
-      working-directory: src
-      run: go build -v ./...
-
-    - name: Test
-      working-directory: src
-      run: go test -v ./...
   build:
     name: Build
-    needs: test
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -66,7 +40,7 @@ jobs:
       with:
         name: tag_changelog
         path: ./tag_changelog.txt
-    - name: "Removing tag files"
+    - name: Removing tag files
       run: |
         rm tag.txt
         rm tag_changelog.txt
@@ -243,9 +217,6 @@ jobs:
       uses: azure/setup-helm@v1
       with:
         version: v3.8.1
-    # - name: Helm Chart Lint
-    #   run: |
-    #     helm lint ./charts
     - name: Helm Package
       run: |
         helm package ./chart_files -d charts
