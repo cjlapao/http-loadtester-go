@@ -571,6 +571,9 @@ header {
 
 .logo {
   a {
+    :hover {
+      text-decoration: none;
+    }
     color: $logo-color;
     align-content: center;
     display: flex;
@@ -580,5 +583,5 @@ header {
     img {
       margin: 0 7px;
     }
-  }
+  }  
 }
