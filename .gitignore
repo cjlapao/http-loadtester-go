@@ -83,3 +83,4 @@ Thumbs.db
 /reports/*.yaml
 /reports/*.json
 /bin
+.jekyll-cache/*
